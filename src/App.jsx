@@ -253,13 +253,24 @@ function App() {
           alert(`⚠️ Vídeo ignorado: ${file.name}`);
           continue;
         }
-        const blob = await upload(file.name, file, { access: 'public', handleUploadUrl: '/api/upload' });
-        newUrls.push(blob.url);
+        try {
+          const blob = await upload(file.name, file, { access: 'public', handleUploadUrl: '/api/upload' });
+          newUrls.push(blob.url);
+        } catch (uploadErr) {
+          console.error("Erro no upload de", file.name, uploadErr);
+          const reader = new FileReader();
+          const base64Url = await new Promise((resolve) => {
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(file);
+          });
+          newUrls.push(base64Url);
+        }
       }
       const updatedGallery = [...currentGallery, ...newUrls];
       setFormData({ ...formData, mediaGallery: updatedGallery, media: updatedGallery[0] || formData.media });
     } catch (err) {
       console.error("Erro no upload da galeria:", err);
+      alert("Erro ao enviar fotos. Tente novamente.");
     } finally {
       setIsUploading(false);
       e.target.value = '';
