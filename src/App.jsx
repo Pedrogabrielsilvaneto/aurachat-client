@@ -584,9 +584,33 @@ function App() {
                     </div>
 
                     <div style={{ width: '100%' }}>
-                       <h4 style={{ fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '1px' }}>Produtos de Interesse</h4>
+                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                          <h4 style={{ fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Produtos de Interesse</h4>
+                          <Plus size={14} style={{ cursor: 'pointer', color: '#2563eb' }} onClick={() => {
+                             const pId = prompt("Selecione o SKU do Produto:");
+                             if (pId) {
+                               const prod = products.find(p => p.code?.toLowerCase().includes(pId.toLowerCase()) || p.name.toLowerCase().includes(pId.toLowerCase()));
+                               if (prod) {
+                                  const updated = [...(selectedChat.interests || []), prod.name];
+                                  setContacts(contacts.map(c => c.id === selectedChat.id ? { ...c, interests: updated } : c));
+                                  axios.put(`${API_URL}/contacts`, { id: selectedChat.id, updates: { interests: updated } });
+                                  setSelectedChat({ ...selectedChat, interests: updated });
+                               } else { alert("Produto não encontrado."); }
+                             }
+                          }} />
+                       </div>
                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', fontSize: '12px', color: '#475569', fontWeight: '600', border: '1px solid #f1f5f9' }}>Porcelanato Polido 60x120</div>
+                          {(selectedChat.interests || ["Porcelanato Polido 60x120"]).map((it, idx) => (
+                             <div key={idx} style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', fontSize: '12px', color: '#475569', fontWeight: '600', border: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                {it}
+                                <Trash2 size={12} style={{ cursor: 'pointer', color: '#ef4444' }} onClick={() => {
+                                   const updated = (selectedChat.interests || ["Porcelanato Polido 60x120"]).filter((_, i) => i !== idx);
+                                   setContacts(contacts.map(c => c.id === selectedChat.id ? { ...c, interests: updated } : c));
+                                   axios.put(`${API_URL}/contacts`, { id: selectedChat.id, updates: { interests: updated } });
+                                   setSelectedChat({ ...selectedChat, interests: updated });
+                                }} />
+                             </div>
+                          ))}
                        </div>
                     </div>
                  </div>
