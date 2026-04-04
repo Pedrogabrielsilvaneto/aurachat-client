@@ -234,11 +234,21 @@ function App() {
   const handleGalleryUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
+    const currentGallery = formData.mediaGallery && formData.mediaGallery.length > 0 ? formData.mediaGallery : (formData.media ? [formData.media] : []);
+    if (currentGallery.length >= 10) {
+      alert("⚠️ Limite de 10 fotos atingido. Remova uma foto antes de adicionar outra.");
+      e.target.value = '';
+      return;
+    }
+    const availableSlots = 10 - currentGallery.length;
+    const filesToUpload = files.slice(0, availableSlots);
+    if (files.length > availableSlots) {
+      alert(`⚠️ Apenas ${availableSlots} foto(s) restante(s). Enviando as primeiras ${availableSlots}.`);
+    }
     setIsUploading(true);
     try {
-      const currentGallery = formData.mediaGallery && formData.mediaGallery.length > 0 ? [...formData.mediaGallery] : (formData.media ? [formData.media] : []);
       const newUrls = [];
-      for (const file of files) {
+      for (const file of filesToUpload) {
         if (file.type.startsWith('video')) {
           alert(`⚠️ Vídeo ignorado: ${file.name}`);
           continue;
@@ -941,11 +951,17 @@ function App() {
               <input value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})} placeholder="SKU" style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
 
               <div>
-                <label style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '6px', display: 'block' }}>GALERIA DE FOTOS</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: '700', color: '#64748b' }}>GALERIA DE FOTOS</label>
+                  <span style={{ fontSize: '10px', fontWeight: '800', color: (() => {
+                    const count = formData.mediaGallery && formData.mediaGallery.length > 0 ? formData.mediaGallery.length : (formData.media ? 1 : 0);
+                    return count >= 10 ? '#ef4444' : '#64748b';
+                  })() }}>{formData.mediaGallery && formData.mediaGallery.length > 0 ? formData.mediaGallery.length : (formData.media ? 1 : 0)}/10</span>
+                </div>
                 <button
                   onClick={() => document.getElementById('galleryFileInput').click()}
-                  disabled={isUploading}
-                  style={{ width: '100%', padding: '12px', border: '2px dashed #e2e8f0', borderRadius: '8px', background: '#f8fafc', cursor: isUploading ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: '700', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
+                  disabled={isUploading || (formData.mediaGallery && formData.mediaGallery.length > 0 ? formData.mediaGallery.length : (formData.media ? 1 : 0)) >= 10}
+                  style={{ width: '100%', padding: '12px', border: '2px dashed #e2e8f0', borderRadius: '8px', background: '#f8fafc', cursor: isUploading || (formData.mediaGallery && formData.mediaGallery.length > 0 ? formData.mediaGallery.length : (formData.media ? 1 : 0)) >= 10 ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: '700', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px', opacity: (formData.mediaGallery && formData.mediaGallery.length > 0 ? formData.mediaGallery.length : (formData.media ? 1 : 0)) >= 10 ? 0.5 : 1 }}>
                   <Upload size={16} /> {isUploading ? 'Enviando...' : 'Enviar fotos do computador'}
                 </button>
                 <input id="galleryFileInput" type="file" accept="image/*" multiple onChange={handleGalleryUpload} style={{ display: 'none' }} />
