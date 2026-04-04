@@ -9,6 +9,8 @@ import {
   PieChart, Pie, Cell, BarChart, Bar, Legend
 } from 'recharts';
 
+import axios from 'axios';
+
 const DASHBOARD_CHART_DATA = [
   { name: 'Seg', leads: 24, conversion: 18 },
   { name: 'Ter', leads: 31, conversion: 22 },
@@ -26,31 +28,45 @@ const SOURCE_DATA = [
   { name: 'Indicação', value: 10, color: '#f59e0b' },
 ];
 
-const INITIAL_PRODUCTS = [
-  { id: '1', code: 'PRC-9090-PLD', name: "Porcelanato Polido 90x90 Gold", media: "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=800", type: 'image', desc: "Acabamento de alto brilho, ideal para áreas nobres." },
-  { id: '2', code: 'REV-SLM-WHT', name: "Revestimento Slim White 30x60", media: "https://images.unsplash.com/photo-1615529328331-f8917597711f?w=800", type: 'image', desc: "Paredes internas. Textura acetinada." },
-];
-
-const INITIAL_CAMPAIGNS = [
-  { id: '1', name: 'Promoção Verão - Pisos', platform: 'Instagram', link: 'ig/verao24', status: 'active', clicks: 1240, leads: 156, conversion: '12.5%' },
-  { id: '2', name: 'Black Friday Antecipada', platform: 'Facebook', link: 'fb/prime', status: 'inactive', clicks: 850, leads: 42, conversion: '4.9%' },
-];
+const API_URL = 'http://localhost:3000'; // Ajuste conforme porta real do backend
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [products, setProducts] = useState(INITIAL_PRODUCTS);
-  const [campaigns, setCampaigns] = useState(INITIAL_CAMPAIGNS);
-  const [contacts, setContacts] = useState([
-    { id: '1', name: 'Pedro Neto', phone: '5511988887777', status: 'new', msg: 'Gostaria de saber o preço do porcelanato polido.', time: '14:20' },
-    { id: '2', name: 'Maria Silva', phone: '5511977776666', status: 'active', msg: 'Pode me enviar o catálogo completo?', time: '13:45' },
-    { id: '3', name: 'Jorge Oliveira', phone: '5511966665555', status: 'completed', msg: 'Pedido confirmado, obrigado!', time: 'Ontem' },
-  ]);
-  const [stats, setStats] = useState({ total: 128, inService: 42, conversion: '24%', responseTime: '1.2s' });
+  const [products, setProducts] = useState([]);
+  const [campaigns, setCampaigns] = useState([]);
+  const [contacts, setContacts] = useState([]);
+  const [stats, setStats] = useState({ total: 0, inService: 0, conversion: '0%', responseTime: '0s' });
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [viewing, setViewing] = useState(null);
   const [formData, setFormData] = useState({ name: '', code: '', media: '', type: 'image', desc: '' });
   const fileInputRef = useRef(null);
+  const [logisticsFilter, setLogisticsFilter] = useState('all');
+
+  // CARREGAR DADOS DO BACKEND
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [cRes, pRes, cpRes, sRes] = await Promise.all([
+          axios.get(`${API_URL}/contacts`),
+          axios.get(`${API_URL}/products`),
+          axios.get(`${API_URL}/campaigns`),
+          axios.get(`${API_URL}/stats`)
+        ]);
+        setContacts(cRes.data);
+        setProducts(pRes.data);
+        setCampaigns(cpRes.data);
+        setStats(sRes.data);
+      } catch (err) {
+        console.error("Erro ao carregar dados:", err);
+      }
+    };
+    fetchData();
+
+    // Atualização em tempo real (Mockup simplificado do Socket.io)
+    const interval = setInterval(fetchData, 10000); // 10s para não sobrecarregar sem socket configurado
+    return () => clearInterval(interval);
+  }, []);
 
   const handleUpload = (e) => {
     const file = e.target.files[0];
@@ -60,15 +76,21 @@ function App() {
     reader.readAsDataURL(file);
   };
 
-  const saveProduct = () => {
-    if (editing) {
-      setProducts(products.map(p => p.id === editing.id ? { ...formData, id: p.id } : p));
-    } else {
-      setProducts([{ ...formData, id: Date.now().toString() }, ...products]);
+  const saveProduct = async () => {
+    try {
+      if (editing) {
+        // Lógica de edição real aqui
+      } else {
+        await axios.post(`${API_URL}/products`, formData);
+      }
+      const res = await axios.get(`${API_URL}/products`);
+      setProducts(res.data);
+      setShowModal(false);
+      setEditing(null);
+      setFormData({ name: '', code: '', media: '', type: 'image', desc: '' });
+    } catch (err) {
+      console.error("Erro ao salvar produto:", err);
     }
-    setShowModal(false);
-    setEditing(null);
-    setFormData({ name: '', code: '', media: '', type: 'image', desc: '' });
   };
 
   const startEdit = (p) => {
@@ -79,6 +101,16 @@ function App() {
 
   const removeProduct = (id) => {
     if (window.confirm("Excluir este produto?")) setProducts(products.filter(p => p.id !== id));
+  };
+
+  const moveContact = async (id, newStatus) => {
+    try {
+      const contact = contacts.find(c => c.id === id);
+      await axios.put(`${API_URL}/contacts/${id}`, { status: newStatus });
+      setContacts(contacts.map(c => c.id === id ? { ...c, status: newStatus } : c));
+    } catch (err) {
+      console.error("Erro ao mover contato:", err);
+    }
   };
 
   return (
@@ -96,7 +128,7 @@ function App() {
             <div style={{ width: '8px', height: '8px', background: '#16a34a', borderRadius: '50%' }} /> WhatsApp Conectado
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 12px', background: '#f1f5f9', borderRadius: '10px' }}>
-            <b style={{ fontSize: '13px' }}>Marcos Neto</b> <ChevronDown size={14} />
+            <b style={{ fontSize: '13px' }}>Marcos</b> <ChevronDown size={14} />
           </div>
         </div>
       </header>
@@ -247,7 +279,29 @@ function App() {
 
         {activeTab === 'logistics' && (
           <div className="animate-in" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <h1 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '24px' }}>Logística de Atendimento</h1>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h1 style={{ fontSize: '24px', fontWeight: '800' }}>Logística de Atendimento</h1>
+              <div style={{ display: 'flex', gap: '8px', background: '#e2e8f0', padding: '4px', borderRadius: '10px' }}>
+                {['all', 'gestao', 'clt', 'terceiros', 'auditoria'].map(role => (
+                  <button 
+                    key={role} 
+                    onClick={() => setLogisticsFilter(role)}
+                    style={{ 
+                      padding: '6px 12px', 
+                      borderRadius: '6px', 
+                      border: 'none', 
+                      fontSize: '11px', 
+                      fontWeight: '700', 
+                      cursor: 'pointer',
+                      background: logisticsFilter === role ? 'white' : 'transparent',
+                      boxShadow: logisticsFilter === role ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'
+                    }}>
+                    {role.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div style={{ display: 'flex', gap: '20px', flex: 1, overflowX: 'auto', paddingBottom: '20px' }}>
               {[
                 { title: 'Novas Leads', key: 'new' },
@@ -258,20 +312,28 @@ function App() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                     <h3 style={{ fontSize: '14px', fontWeight: '800', color: '#475569' }}>{col.title.toUpperCase()}</h3>
                     <span style={{ fontSize: '12px', background: '#cbd5e1', padding: '2px 8px', borderRadius: '10px', fontWeight: '700' }}>
-                      {contacts.filter(c => c.status === col.key).length}
+                      {contacts.filter(c => (logisticsFilter === 'all' || c.role === logisticsFilter) && c.status === col.key).length}
                     </span>
                   </div>
                   <div style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {contacts.filter(c => c.status === col.key).map(c => (
-                      <div key={c.id} className="card" style={{ padding: '12px', cursor: 'grab' }}>
-                        <div style={{ fontSize: '13px', fontWeight: '700', marginBottom: '4px' }}>{c.name}</div>
-                        <div style={{ fontSize: '11px', color: '#64748b' }}>{c.phone}</div>
-                        <div style={{ fontSize: '12px', marginTop: '8px', color: '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.msg}</div>
+                    {contacts.filter(c => (logisticsFilter === 'all' || c.role === logisticsFilter) && c.status === col.key).map(c => (
+                      <div key={c.id} className="card" style={{ padding: '16px', cursor: 'grab', position: 'relative' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '10px', background: '#eff6ff', color: '#2563eb', padding: '2px 6px', borderRadius: '4px', fontWeight: '800' }}>{c.role.toUpperCase()}</span>
+                          <span style={{ fontSize: '11px', color: '#94a3b8' }}>{c.time}</span>
+                        </div>
+                        <div style={{ fontSize: '14px', fontWeight: '800', marginBottom: '4px' }}>{c.name}</div>
+                        <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>{c.phone}</div>
+                        
+                        <div style={{ display: 'flex', gap: '6px', borderTop: '1px solid #f1f5f9', paddingTop: '10px' }}>
+                           {col.key !== 'new' && <button onClick={() => moveContact(c.id, col.key === 'completed' ? 'active' : 'new')} style={{ flex: 1, padding: '6px', background: '#f1f5f9', border: 'none', borderRadius: '6px', fontSize: '10px', fontWeight: '700', cursor: 'pointer' }}>VOLTAR</button>}
+                           {col.key !== 'completed' && <button onClick={() => moveContact(c.id, col.key === 'new' ? 'active' : 'completed')} style={{ flex: 1, padding: '6px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '6px', fontSize: '10px', fontWeight: '700', cursor: 'pointer' }}>AVANÇAR</button>}
+                        </div>
                       </div>
                     ))}
-                    {contacts.filter(c => c.status === col.key).length === 0 && (
+                    {contacts.filter(c => (logisticsFilter === 'all' || c.role === logisticsFilter) && c.status === col.key).length === 0 && (
                       <div style={{ border: '2px dashed #cbd5e1', borderRadius: '10px', height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '13px' }}>
-                        Nenhum card aqui
+                        Vazio
                       </div>
                     )}
                   </div>
