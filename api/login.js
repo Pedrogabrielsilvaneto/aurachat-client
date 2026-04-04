@@ -28,7 +28,9 @@ export default async function handler(req, res) {
       return res.status(401).json({ success: false, message: 'Credenciais inválidas' });
     }
 
-    const validPass = await bcrypt.compare(pass, found.pass);
+    const validPass = found.pass.startsWith('$2') 
+      ? await bcrypt.compare(pass, found.pass) 
+      : pass === found.pass;
     if (!validPass) {
       return res.status(401).json({ success: false, message: 'Credenciais inválidas' });
     }
