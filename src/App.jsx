@@ -84,16 +84,30 @@ function App() {
     fetchData();
   }, []);
 
-  // SALVAR NO LOCALSTORAGE SEMPRE QUE ALGO MUDAR
+  // SALVAR NO LOCALSTORAGE SEMPRE QUE ALGO MUDAR COM TRATAMENTO DE ERRO
   React.useEffect(() => {
-    localStorage.setItem('aura_products', JSON.stringify(products));
-    localStorage.setItem('aura_campaigns', JSON.stringify(campaigns));
-    localStorage.setItem('aura_contacts', JSON.stringify(contacts));
+    try {
+      localStorage.setItem('aura_products', JSON.stringify(products));
+      localStorage.setItem('aura_campaigns', JSON.stringify(campaigns));
+      localStorage.setItem('aura_contacts', JSON.stringify(contacts));
+    } catch (e) {
+      if (e.name === 'QuotaExceededError') {
+        console.error("Limite de armazenamento do navegador atingido! Use imagens menores ou vincule o Vercel Blob.");
+        alert("⚠️ O limite de memória do navegador foi atingido ao tentar salvar imagens pesadas. Tente usar fotos menores ou links externos.");
+      }
+    }
   }, [products, campaigns, contacts]);
 
   const handleUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    // Limite preventivo para o LocalStorage do Navegador (Max 1.5MB)
+    if (file.size > 1500 * 1024) {
+      alert("⚠️ Arquivo muito grande para o modo temporário! Por favor, use imagens menores que 1MB enquanto não ativamos o Vercel Blob.");
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (ev) => setFormData({ ...formData, media: ev.target.result, type: file.type.startsWith('video') ? 'video' : 'image' });
     reader.readAsDataURL(file);
