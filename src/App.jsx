@@ -65,6 +65,7 @@ function SidebarLink({ icon, label, active, onClick, color }) {
 }
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(() => !!localStorage.getItem('aura_token'));
   const [activeTab, setActiveTab] = useState('dashboard');
   const [products, setProducts] = useState(DEFAULT_PRODUCTS);
   const [contacts, setContacts] = useState(DEFAULT_CONTACTS);
@@ -74,6 +75,8 @@ function App() {
   const [editing, setEditing] = useState(null);
   const [viewing, setViewing] = useState(null);
   const [formData, setFormData] = useState({ name: '', code: '', media: '', mediaGallery: [], type: 'image', desc: '', videoUrl: '', campaignId: '' });
+  const [loginUser, setLoginUser] = useState('');
+  const [loginPass, setLoginPass] = useState('');
   const [carouselIndex, setCarouselIndex] = useState({});
   const [selectedChat, setSelectedChat] = useState(null);
   const [msgInput, setMsgInput] = useState('');
@@ -143,6 +146,24 @@ function App() {
       }
       setProducts(updated);
     }
+  };
+
+  const handleLogin = async () => {
+    try {
+      const res = await axios.post(`${API_URL}/login`, { user: loginUser, pass: loginPass });
+      if (res.data.success) {
+        localStorage.setItem('aura_token', res.data.token);
+        setIsAuthenticated(true);
+      }
+    } catch (err) {
+      alert('Credenciais inválidas');
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('aura_token');
+    setIsAuthenticated(false);
+    setActiveTab('dashboard');
   };
 
   const removeCampaign = async (id) => { 
@@ -275,6 +296,24 @@ function App() {
   };
 
   return (
+    <>
+      {!isAuthenticated && (
+        <div style={{ position: 'fixed', inset: 0, background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div className="card" style={{ width: '380px', padding: '40px', textAlign: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '30px' }}>
+              <Zap size={28} color="#2563eb" /> <span style={{ fontWeight: '800', fontSize: '24px' }}>AuraChat</span>
+            </div>
+            <h2 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '8px' }}>Bem-vindo</h2>
+            <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '24px' }}>Faça login para acessar o painel</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <input value={loginUser} onChange={e => setLoginUser(e.target.value)} placeholder="Usuário" style={{ padding: '14px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '14px' }} onKeyPress={e => e.key === 'Enter' && handleLogin()} />
+              <input value={loginPass} onChange={e => setLoginPass(e.target.value)} type="password" placeholder="Senha" style={{ padding: '14px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '14px' }} onKeyPress={e => e.key === 'Enter' && handleLogin()} />
+              <button className="btn-primary" onClick={handleLogin} style={{ padding: '14px', marginTop: '8px', fontSize: '14px' }}>Entrar</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {isAuthenticated && (
     <div className="app-container">
       <header className="header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -302,7 +341,7 @@ function App() {
         <SidebarLink icon={<ShoppingCart size={20}/>} label="Compras" active={activeTab === 'compras'} onClick={() => setActiveTab('compras')} />
         <SidebarLink icon={<MessageCircle size={20}/>} label="Atendimento" active={activeTab === 'whatsapp'} onClick={() => setActiveTab('whatsapp')} />
         <SidebarLink icon={<Activity size={20}/>} label="Gestão" active={activeTab === 'gestion'} onClick={() => setActiveTab('gestion')} />
-        <div style={{ marginTop: 'auto' }}><SidebarLink icon={<LogOut size={20}/>} label="Sair" color="#ef4444" /></div>
+        <div style={{ marginTop: 'auto' }}><SidebarLink icon={<LogOut size={20}/>} label="Sair" color="#ef4444" onClick={handleLogout} /></div>
       </aside>
 
       <main className="main-content">
@@ -1094,6 +1133,8 @@ function App() {
         </div>
       )}
     </div>
+      )}
+    </>
   );
 }
 
