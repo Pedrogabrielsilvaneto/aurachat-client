@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Settings, LogOut, DollarSign, Zap, 
   Clock, CheckCircle, Package, Send, Bell, Sun, Moon,
   MoreVertical, ChevronRight, User, Ghost, ShieldAlert,
-  ArrowLeft, Paperclip, Smile
+  ArrowLeft, Paperclip, Smile, MessageSquare as MessageSquareIcon
 } from 'lucide-react';
 
 // ==========================================
@@ -34,7 +34,7 @@ function App() {
   return (
     <div className={`app-container ${isDarkMode ? 'dark' : ''}`}>
       
-      {/* HEADER UNIFICADO (image_0.png Standard) */}
+      {/* HEADER UNIFICADO */}
       <header className="header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ background: '#2563eb', padding: '10px', borderRadius: '12px' }}>
@@ -59,19 +59,19 @@ function App() {
         </div>
       </header>
 
-      {/* SIDEBAR COMPLETA */}
+      {/* SIDEBAR COMPLETA - TODOS OS BOTÕES LINKADOS AGORA */}
       <aside className="sidebar">
-        <SidebarLink icon={<LayoutDashboard size={20}/>} label="Dashboard" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
-        <SidebarLink icon={<MessageCircle size={20}/>} label="WhatsApp" active={activeTab === 'whatsapp'} />
-        <SidebarLink icon={<Truck size={20}/>} label="Logística" active={activeTab === 'logistics'} />
-        <SidebarLink icon={<ShoppingCart size={20}/>} label="Compras" />
+        <SidebarLink icon={<LayoutDashboard size={20}/>} label="Dashboard" active={activeTab === 'dashboard'} onClick={() => { setActiveTab('dashboard'); setSelectedAttendant(null); }} />
+        <SidebarLink icon={<MessageCircle size={20}/>} label="WhatsApp" active={activeTab === 'whatsapp'} onClick={() => setActiveTab('whatsapp')} />
+        <SidebarLink icon={<Truck size={20}/>} label="Logística" active={activeTab === 'logistics'} onClick={() => setActiveTab('logistics')} />
+        <SidebarLink icon={<ShoppingCart size={20}/>} label="Compras" active={activeTab === 'purchases'} onClick={() => setActiveTab('purchases')} />
         
         <div style={{ margin: '12px 0', height: '1px', background: '#f1f5f9' }} />
         
-        <SidebarLink icon={<MessageSquare size={20}/>} label="Internal Chat" active={activeTab === 'internal'} onClick={() => setActiveTab('internal')} variant="highlight" />
+        <SidebarLink icon={<MessageSquareIcon size={20}/>} label="Internal Chat" active={activeTab === 'internal'} onClick={() => setActiveTab('internal')} variant="highlight" />
         
         <div style={{ marginTop: 'auto' }}>
-           <SidebarLink icon={<Settings size={20}/>} label="Configurações" />
+           <SidebarLink icon={<Settings size={20}/>} label="Configurações" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
            <SidebarLink icon={<LogOut size={20}/>} label="Sair" color="#ef4444" onClick={() => { localStorage.removeItem('aura_token'); setIsAuthenticated(false); }} />
         </div>
       </aside>
@@ -82,7 +82,7 @@ function App() {
         {activeTab === 'dashboard' && (
           <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
              
-             {/* CARDS DE KPI ALINHADOS */}
+             {/* CARDS DE KPI */}
              <div className="kpi-grid">
                 <KPICard label="Faturamento Mês" value="R$ 142.500" trend="+12%" icon={<DollarSign size={20}/>} color="#2563eb" />
                 <KPICard label="Volume Vendido" value="1.840 m²" trend="+8%" icon={<Package size={20}/>} color="#8b5cf6" />
@@ -133,7 +133,7 @@ function App() {
                    </table>
                 </div>
 
-                {/* PAINEL DIREITO: MODO ESPIÃO (Hierarquia Standard) */}
+                {/* PAINEL DIREITO: MODO ESPIÃO */}
                 {selectedAttendant && (
                    <div className="card animate-in" style={{ padding: 0, display: 'flex', flexDirection: 'column', background: '#fcfcfc' }}>
                       <div style={{ padding: '20px', background: '#fef2f2', borderBottom: '1px solid #fee2e2', borderRadius: '12px 12px 0 0', display: 'flex', justifyContent: 'space-between' }}>
@@ -141,7 +141,7 @@ function App() {
                             <h3 style={{ fontSize: '14px', fontWeight: '800', color: '#ef4444' }}>MODO ESPIÃO ATIVO</h3>
                             <p style={{ fontSize: '12px', color: '#ef4444' }}>Monitorando: {selectedAttendant.name}</p>
                          </div>
-                         <button onClick={() => { setSelectedAttendant(null); setSelectedSpyChat(null); }} style={{ height: '24px', opacity: 0.5 }}>×</button>
+                         <button onClick={() => { setSelectedAttendant(null); setSelectedSpyChat(null); }} style={{ height: '24px', opacity: 0.5, border: 'none', background: 'none', cursor: 'pointer', fontSize: '20px' }}>×</button>
                       </div>
 
                       <div style={{ padding: '16px', flex: 1, overflowY: 'auto' }}>
@@ -168,34 +168,54 @@ function App() {
 
                          {selectedSpyChat && (
                            <div style={{ marginTop: '24px', borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
-                              <p style={{ fontSize: '10px', color: '#10b981', fontWeight: '800', marginBottom: '12px', textAlign: 'center' }}>🛰️ MONITORAMENTO REAL-TIME: INVISÍVEL</p>
+                              <p style={{ fontSize: '10px', color: '#10b981', fontWeight: '800', marginBottom: '12px', textAlign: 'center' }}>🛰️ MONITORAMENTO REAL-TIME</p>
                               <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', fontSize: '12px', marginBottom: '20px' }}>
                                  <div style={{ marginBottom: '8px' }}><b>Cliente:</b> {selectedSpyChat.lastMsg}</div>
                                  <div style={{ color: '#2563eb' }}><b>{selectedAttendant.name}:</b> Vou verificar agora...</div>
                               </div>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                 <button className="btn-primary" style={{ background: '#f59e0b', width: '100%' }}>Sussurrar p/ Vendedor</button>
-                                 <button className="btn-primary" style={{ background: '#ef4444', width: '100%' }}>Assumir Conversa</button>
+                                 <button className="btn-primary" style={{ background: '#f59e0b', width: '100%', padding: '10px' }}>Sussurrar p/ Vendedor</button>
+                                 <button className="btn-primary" style={{ background: '#ef4444', width: '100%', padding: '10px' }}>Assumir Conversa</button>
                               </div>
                            </div>
                          )}
                       </div>
                    </div>
                 )}
-
              </div>
           </div>
         )}
 
-        {/* CÓDIGO DO CHAT INTERNO (WHATSAPP STYLE) */}
+        {/* VIEW: LOGÍSTICA (REATIVADA) */}
+        {activeTab === 'logistics' && (
+           <div className="animate-in">
+              <h2 style={{ marginBottom: '24px' }}>Módulo de Logística (Em construção)</h2>
+              <div className="card" style={{ textAlign: 'center', padding: '80px' }}>
+                 <Truck size={48} color="#2563eb" style={{ margin: '0 auto 20px' }} />
+                 <p>O painel de controle de rotas e separação de pedidos está sendo integrado.</p>
+              </div>
+           </div>
+        )}
+
+        {/* VIEW: WHATSAPP (REATIVADA) */}
+        {activeTab === 'whatsapp' && (
+           <div className="animate-in">
+              <h2 style={{ marginBottom: '24px' }}>Fila WhatsApp Geral</h2>
+              <div className="card" style={{ textAlign: 'center', padding: '80px' }}>
+                 <MessageCircle size={48} color="#2563eb" style={{ margin: '0 auto 20px' }} />
+                 <p>Conectando ao broker oficial Pereira Acabamentos...</p>
+              </div>
+           </div>
+        )}
+
+        {/* VIEW: INTERNAL CHAT */}
         {activeTab === 'internal' && (
-           <div className="card animate-in" style={{ flex: 1, padding: 0, display: 'grid', gridTemplateColumns: '320px 1fr' }}>
+           <div className="card animate-in" style={{ flex: 1, padding: 0, display: 'grid', gridTemplateColumns: '320px 1fr', height: 'calc(100vh - 120px)' }}>
               <div style={{ borderRight: '1px solid #e2e8f0', padding: '20px' }}>
                  <input type="text" className="search-bar" placeholder="Buscar Equipe..." style={{ width: '100%', marginBottom: '20px' }} />
-                 {/* ... Lista de contatos ... */}
                  <div style={{ opacity: 0.5, textAlign: 'center', marginTop: '40px' }}>
                     <Users size={48} style={{ margin: '0 auto 12px' }} />
-                    <p>Módulo Interno Estilo WhatsApp pronto para comunicação isolada.</p>
+                    <p>Módulo de comunicação interna por departamento.</p>
                  </div>
               </div>
               <div style={{ background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
@@ -203,14 +223,13 @@ function App() {
               </div>
            </div>
         )}
-
       </main>
     </div>
   );
 }
 
 // ==========================================
-// COMPONENTES DE UI COMPACTOS
+// COMPONENTES DE UI CORRIGIDOS
 // ==========================================
 
 function SidebarLink({ icon, label, active, onClick, variant, color }) {
@@ -243,9 +262,6 @@ function KPICard({ label, value, trend, icon, color }) {
     </div>
   );
 }
-
-function MessageSquare(props) { return <MessageSquareIcon {...props} />; }
-function MessageSquareIcon(props) { return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>; }
 
 function LoginScreen({ onLogin }) {
   return (
