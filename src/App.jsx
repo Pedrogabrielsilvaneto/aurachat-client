@@ -278,18 +278,18 @@ function App() {
                 </div>
                 <div style={{ display: 'flex', gap: '8px', background: '#f1f5f9', padding: '6px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                    {[
-                      { key: 'new', label: 'Aguardando', color: '#64748b' },
+                      { key: 'waiting_logistics', label: 'Aguardando', color: '#64748b' },
                       { key: 'shipped', label: 'Saiu para Entrega', color: '#3b82f6' },
                       { key: 'delivered', label: 'Entregue', color: '#10b981' },
-                      { key: 'failed', label: 'Problema', color: '#ef4444' }
+                      { key: 'failed', label: 'Problema / Falta', color: '#ef4444' }
                    ].map(st => (
                       <button 
                         key={st.key}
                         onClick={() => setLogisticsSubTab(st.key)}
                         style={{ 
                           padding: '8px 16px', borderRadius: '8px', border: 'none', fontSize: '12px', fontWeight: '800', cursor: 'pointer',
-                          background: (logisticsSubTab || 'new') === st.key ? st.color : 'transparent',
-                          color: (logisticsSubTab || 'new') === st.key ? 'white' : '#64748b',
+                          background: (logisticsSubTab || 'waiting_logistics') === st.key ? st.color : 'transparent',
+                          color: (logisticsSubTab || 'waiting_logistics') === st.key ? 'white' : '#64748b',
                           transition: 'all 0.2s'
                         }}>
                         {st.label.toUpperCase()} ({contacts.filter(c => c.status === st.key).length})
@@ -302,58 +302,94 @@ function App() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                    <thead>
                       <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
-                         <th style={{ padding: '16px', fontSize: '12px', fontWeight: '800' }}>CLIENTE</th>
-                         <th style={{ padding: '16px', fontSize: '12px', fontWeight: '800' }}>STATUS</th>
-                         <th style={{ padding: '16px', fontSize: '12px', fontWeight: '800' }}>INTERESSES</th>
-                         <th style={{ padding: '16px', fontSize: '12px', fontWeight: '800' }}>OBSERVAÇÕES (API SYNC)</th>
-                         <th style={{ padding: '16px', fontSize: '12px', fontWeight: '800', textAlign: 'right' }}>AÇÕES</th>
+                         <th style={{ padding: '16px', fontSize: '11px', fontWeight: '800' }}>PEDIDO / VENDEDOR</th>
+                         <th style={{ padding: '16px', fontSize: '11px', fontWeight: '800' }}>CLIENTE</th>
+                         <th style={{ padding: '16px', fontSize: '11px', fontWeight: '800' }}>PRAZO COMBINADO</th>
+                         <th style={{ padding: '16px', fontSize: '11px', fontWeight: '800' }}>OBSERVAÇÕES / REPORTES</th>
+                         <th style={{ padding: '16px', fontSize: '11px', fontWeight: '800', textAlign: 'right' }}>AÇÕES</th>
                       </tr>
                    </thead>
                    <tbody>
-                      {contacts.filter(c => c.status === (logisticsSubTab || 'new')).length === 0 ? (
-                         <tr><td colSpan="5" style={{ padding: '60px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>Nenhum pedido nesta fase no momento.</td></tr>
+                      {contacts.filter(c => c.status === (logisticsSubTab || 'waiting_logistics')).length === 0 ? (
+                         <tr><td colSpan="5" style={{ padding: '60px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>Logística vazia nesta fase.</td></tr>
                       ) : (
-                         contacts.filter(c => c.status === (logisticsSubTab || 'new')).map(c => (
+                         contacts.filter(c => c.status === (logisticsSubTab || 'waiting_logistics')).map(c => (
                             <tr key={c.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                                <td style={{ padding: '16px' }}>
-                                  <div style={{ fontWeight: '800', fontSize: '14px' }}>{c.name}</div>
+                                  <div style={{ fontWeight: '900', color: '#2563eb' }}>#{c.orderNumber || '0000'}</div>
+                                  <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '700' }}>VEND: {c.sellerName?.toUpperCase() || 'SÔNIA IA'}</div>
+                               </td>
+                               <td style={{ padding: '16px' }}>
+                                  <div style={{ fontWeight: '800', fontSize: '13px' }}>{c.name}</div>
                                   <div style={{ fontSize: '11px', color: '#64748b' }}>{c.phone}</div>
                                </td>
                                <td style={{ padding: '16px' }}>
-                                  <select 
-                                    value={c.status} 
-                                    onChange={(e) => moveContact(c.id, e.target.value)}
-                                    style={{ 
-                                      padding: '6px', borderRadius: '6px', fontSize: '10px', fontWeight: '900',
-                                      background: c.status === 'failed' ? '#ef4444' : (c.status === 'delivered' ? '#10b981' : '#3b82f6'),
-                                      color: 'white', border: 'none'
-                                    }}>
-                                     <option value="new">AGUARDANDO</option>
-                                     <option value="shipped">SAIU PARA ENTREGA</option>
-                                     <option value="delivered">ENTREGUE</option>
-                                     <option value="failed">PROBLEMA</option>
-                                  </select>
-                               </td>
-                               <td style={{ padding: '16px' }}>
-                                  <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                                     {(c.interests || []).map((it, i) => <span key={i} style={{ background: '#eff6ff', color: '#2563eb', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: '700' }}>{it}</span>)}
-                                  </div>
+                                  <div style={{ fontSize: '12px', fontWeight: '800', color: '#1e293b' }}>{c.deliveryDeadline || 'Não informado'}</div>
+                                  {c.buyerDeadline && <div style={{ fontSize: '10px', color: '#ef4444', fontWeight: '700', marginTop: '4px' }}>REPOSIÇÃO: {c.buyerDeadline}</div>}
                                </td>
                                <td style={{ padding: '16px' }}>
                                   <input 
                                     defaultValue={c.obs || ""}
                                     onBlur={(e) => axios.put(`${API_URL}/contacts`, { id: c.id, updates: { obs: e.target.value } })}
-                                    style={{ width: '100%', padding: '8px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '12px' }} 
+                                    style={{ width: '100%', padding: '8px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '11px' }} 
                                   />
                                </td>
                                <td style={{ padding: '16px', textAlign: 'right' }}>
-                                  <button onClick={() => { setSelectedChat(c); setActiveTab('whatsapp'); }} style={{ padding: '8px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px' }}><MessageCircle size={14}/></button>
+                                  <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                                     <button 
+                                       onClick={() => {
+                                          const reason = prompt("Descreva o motivo do reporte ao Vendedor/Comprador:");
+                                          if(reason) {
+                                             axios.put(`${API_URL}/contacts`, { id: c.id, updates: { status: 'failed', obs: `🚩 FALTA ESTOQUE: ${reason}` } });
+                                             setContacts(contacts.map(item => item.id === c.id ? { ...item, status: 'failed', obs: `🚩 FALTA ESTOQUE: ${reason}` } : item));
+                                             alert("Reportado com Sucesso!");
+                                          }
+                                       }}
+                                       style={{ padding: '8px', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '8px', color: '#ef4444', fontSize: '10px', fontWeight: '800', cursor: 'pointer' }}>
+                                        REPORTAR FALTA
+                                     </button>
+                                     <select 
+                                       value={c.status} 
+                                       onChange={(e) => moveContact(c.id, e.target.value)}
+                                       style={{ padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '10px', fontWeight: '800' }}>
+                                        <option value="waiting_logistics">AGUARDANDO</option>
+                                        <option value="shipped">SAÍDA</option>
+                                        <option value="delivered">ENTREGUE</option>
+                                        <option value="failed">PROBLEMA</option>
+                                     </select>
+                                  </div>
                                </td>
                             </tr>
                          ))
                       )}
                    </tbody>
                 </table>
+             </div>
+
+             {/* BLOCO COMPRADOR */}
+             <div style={{ marginTop: '24px', background: '#fff7ed', border: '1px solid #ffedd5', padding: '20px', borderRadius: '16px' }}>
+                 <h3 style={{ fontSize: '14px', fontWeight: '800', color: '#9a3412', marginBottom: '12px' }}>PAINEL DO COMPRADOR / SUPRIMENTOS</h3>
+                 <p style={{ fontSize: '12px', color: '#c2410c', marginBottom: '15px' }}>Selecione um pedido reportado para informar o novo prazo de reposição.</p>
+                 <div style={{ display: 'flex', gap: '10px' }}>
+                    <select id="buyerOrder" style={{ padding: '10px', borderRadius: '10px', border: '1px solid #fed7aa' }}>
+                       <option value="">Selecione pedido com falta...</option>
+                       {contacts.filter(c => c.status === 'failed').map(c => <option key={c.id} value={c.id}>#{c.orderNumber} - {c.name}</option>)}
+                    </select>
+                    <input id="buyerDeadline" placeholder="Prazo de Reposição (ex: 5 dias)" style={{ padding: '10px', borderRadius: '10px', border: '1px solid #fed7aa' }} />
+                    <button 
+                      onClick={() => {
+                        const id = document.getElementById('buyerOrder').value;
+                        const deadline = document.getElementById('buyerDeadline').value;
+                        if(id && deadline) {
+                           axios.put(`${API_URL}/contacts`, { id, updates: { buyerDeadline: deadline } });
+                           setContacts(contacts.map(c => c.id === id ? { ...c, buyerDeadline: deadline } : c));
+                           alert("Prazo informado ao vendedor e logística!");
+                        }
+                      }}
+                      style={{ background: '#f97316', color: 'white', padding: '10px 20px', borderRadius: '10px', border: 'none', fontWeight: '800', cursor: 'pointer' }}>
+                      INFORMAR PRAZO
+                    </button>
+                 </div>
              </div>
           </div>
         )}
@@ -425,28 +461,40 @@ function App() {
                  
                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
-                       <h4 style={{ fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}><ShoppingCart size={12} /> Venda</h4>
+                       <h4 style={{ fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}><ShoppingCart size={12} /> Detalhes do Pedido</h4>
                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div>
+                            <label style={{ fontSize: '10px', color: '#64748b', fontWeight: '700' }}>NÚMERO DO PEDIDO</label>
+                            <input 
+                              placeholder="Geração automática..." 
+                              defaultValue={selectedChat.orderNumber || Math.floor(1000 + Math.random() * 9000)} 
+                              onBlur={(e) => {
+                                 const num = e.target.value;
+                                 axios.put(`${API_URL}/contacts`, { id: selectedChat.id, updates: { orderNumber: num, sellerName: 'Marcos Neto' } });
+                                 setContacts(contacts.map(c => c.id === selectedChat.id ? { ...c, orderNumber: num, sellerName: 'Marcos Neto' } : c));
+                              }}
+                              style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '800', color: '#2563eb' }} 
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '10px', color: '#64748b', fontWeight: '700' }}>PRAZO COMBINADO</label>
+                            <input 
+                              placeholder="Ex: 3 dias úteis" 
+                              defaultValue={selectedChat.deliveryDeadline || ""} 
+                              onBlur={(e) => {
+                                 const p = e.target.value;
+                                 axios.put(`${API_URL}/contacts`, { id: selectedChat.id, updates: { deliveryDeadline: p } });
+                                 setContacts(contacts.map(c => c.id === selectedChat.id ? { ...c, deliveryDeadline: p } : c));
+                              }}
+                              style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px' }} 
+                            />
+                          </div>
                           <input 
-                            placeholder="Valor R$" 
+                            placeholder="Valor Final R$" 
                             defaultValue={selectedChat.saleValue || ""} 
                             onBlur={(e) => axios.put(`${API_URL}/contacts`, { id: selectedChat.id, updates: { saleValue: e.target.value } })}
                             style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '700' }} 
                           />
-                          <select 
-                            value={selectedChat.paymentMethod || ""} 
-                            onChange={(e) => {
-                               const p = e.target.value;
-                               axios.put(`${API_URL}/contacts`, { id: selectedChat.id, updates: { paymentMethod: p } });
-                               setContacts(contacts.map(c => c.id === selectedChat.id ? { ...c, paymentMethod: p } : c));
-                               setSelectedChat({ ...selectedChat, paymentMethod: p });
-                            }}
-                            style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '12px', fontWeight: '600' }}>
-                             <option value="">Pagamento...</option>
-                             <option value="pix">PIX</option>
-                             <option value="card">Cartão</option>
-                             <option value="boleto">Boleto</option>
-                          </select>
                        </div>
                     </div>
 
@@ -500,7 +548,7 @@ function App() {
                  </div>
 
                  <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
-                    <button onClick={() => { moveContact(selectedChat.id, 'shipped'); setSelectedChat(null); }} style={{ width: '100%', padding: '14px', background: '#10b981', color: 'white', border: 'none', borderRadius: '10px', fontSize: '12px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <button onClick={() => { moveContact(selectedChat.id, 'waiting_logistics'); setSelectedChat(null); }} style={{ width: '100%', padding: '14px', background: '#10b981', color: 'white', border: 'none', borderRadius: '10px', fontSize: '12px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                        <CheckCircle size={16} /> FINALIZAR VENDA
                     </button>
                  </div>
