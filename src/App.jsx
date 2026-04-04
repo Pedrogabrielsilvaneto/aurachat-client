@@ -535,24 +535,67 @@ function App() {
             
             {/* INFO DO CLIENTE (DIREITA) */}
             {selectedChat && (
-              <div className="animate-in" style={{ width: '300px', borderLeft: '1px solid #e2e8f0', background: 'white', padding: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                 <div style={{ width: '80px', height: '80px', background: '#2563eb', color: 'white', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: '800', marginBottom: '20px' }}>
-                    {selectedChat.name[0]}
+              <div className="animate-in" style={{ width: '300px', borderLeft: '1px solid #e2e8f0', background: 'white', padding: '24px', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '24px' }}>
+                    <div style={{ width: '64px', height: '64px', background: '#2563eb', color: 'white', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: '800', marginBottom: '12px' }}>
+                        {selectedChat.name[0]}
+                    </div>
+                    <h3 style={{ fontSize: '16px', fontWeight: '800', marginBottom: '2px' }}>{selectedChat.name}</h3>
+                    <p style={{ fontSize: '12px', color: '#64748b' }}>{selectedChat.phone}</p>
                  </div>
-                 <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '4px' }}>{selectedChat.name}</h3>
-                 <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '40px' }}>{selectedChat.phone}</p>
                  
-                 <div style={{ width: '100%', marginBottom: '30px' }}>
-                    <h4 style={{ fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '1px' }}>Produtos de Interesse</h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                       <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', fontSize: '12px', color: '#475569', fontWeight: '600', border: '1px solid #f1f5f9' }}>Porcelanato Polido 60x120</div>
-                       <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', fontSize: '12px', color: '#475569', fontWeight: '600', border: '1px solid #f1f5f9' }}>Rodapé Poliestireno</div>
+                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    {/* FECHAMENTO DE VENDA */}
+                    <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
+                       <h4 style={{ fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                         <ShoppingCart size={12} /> Detalhes da Venda
+                       </h4>
+                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          <div>
+                            <label style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '4px' }}>VALOR ACORDADO (R$)</label>
+                            <input placeholder="0,00" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '700' }} />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '4px' }}>FORMA DE PAGAMENTO</label>
+                            <select style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '12px', fontWeight: '600', color: '#1e293b', background: 'white' }}>
+                               <option>Selecione...</option>
+                               <option>PIX (Desconto 5%)</option>
+                               <option>Cartão de Crédito</option>
+                               <option>Boleto Bancário</option>
+                               <option>Transferência Oracle</option>
+                            </select>
+                          </div>
+                       </div>
+                    </div>
+
+                    {/* TRANSFERÊNCIA */}
+                    <div style={{ background: '#f0f9ff', padding: '16px', borderRadius: '12px', border: '1px solid #e0f2fe' }}>
+                       <h4 style={{ fontSize: '11px', fontWeight: '800', color: '#0369a1', textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                         <ExternalLink size={12} /> Transferir Atendimento
+                       </h4>
+                       <select style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #bae6fd', fontSize: '12px', fontWeight: '600', color: '#0369a1', background: 'white' }}>
+                          <option>Aguardando vendedor...</option>
+                          <option>Marcos Neto (Gestor)</option>
+                          <option>Rodrigo Vendas</option>
+                          <option>Ana Comercial</option>
+                          <option>Sônia IA (Automático)</option>
+                       </select>
+                       <button style={{ width: '100%', marginTop: '8px', padding: '8px', background: '#0ea5e9', color: 'white', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '800', cursor: 'pointer' }}>TRANSFERIR AGORA</button>
+                    </div>
+
+                    <div style={{ width: '100%' }}>
+                       <h4 style={{ fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '1px' }}>Produtos de Interesse</h4>
+                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', fontSize: '12px', color: '#475569', fontWeight: '600', border: '1px solid #f1f5f9' }}>Porcelanato Polido 60x120</div>
+                       </div>
                     </div>
                  </div>
 
-                 <div style={{ marginTop: 'auto', width: '100%' }}>
-                    <button onClick={() => moveContact(selectedChat.id, 'completed')} style={{ width: '100%', padding: '12px', background: '#eff6ff', color: '#2563eb', border: 'none', borderRadius: '10px', fontSize: '12px', fontWeight: '800', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.target.style.background='#dbeafe'} onMouseLeave={e => e.target.style.background='#eff6ff'}>FINALIZAR ATENDIMENTO</button>
-                    <button style={{ width: '100%', padding: '12px', background: '#fff', color: '#ef4444', border: '1px solid #fee2e2', borderRadius: '10px', fontSize: '12px', fontWeight: '800', cursor: 'pointer', marginTop: '10px' }}>BLOQUEAR CONTATO</button>
+                 <div style={{ marginTop: 'auto', paddingTop: '20px', width: '100%' }}>
+                    <button onClick={() => { moveContact(selectedChat.id, 'completed'); alert("🚀 Venda finalizada! Lead enviado para a Logística."); setSelectedChat(null); }} style={{ width: '100%', padding: '14px', background: '#10b981', color: 'white', border: 'none', borderRadius: '10px', fontSize: '12px', fontWeight: '800', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                       <CheckCircle size={16} /> FINALIZAR E ENVIAR LOGÍSTICA
+                    </button>
+                    <button style={{ width: '100%', padding: '12px', background: '#fff', color: '#94a3b8', border: 'none', borderRadius: '10px', fontSize: '11px', fontWeight: '700', cursor: 'pointer', marginTop: '6px' }}>SAIR SEM SALVAR</button>
                  </div>
               </div>
             )}
