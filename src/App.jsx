@@ -84,33 +84,54 @@ function App() {
     fetchData();
   }, []);
 
+  const [isUploading, setIsUploading] = useState(false);
+
   // SALVAR NO LOCALSTORAGE SEMPRE QUE ALGO MUDAR COM TRATAMENTO DE ERRO
   React.useEffect(() => {
     try {
-      localStorage.setItem('aura_products', JSON.stringify(products));
       localStorage.setItem('aura_campaigns', JSON.stringify(campaigns));
       localStorage.setItem('aura_contacts', JSON.stringify(contacts));
+      localStorage.setItem('aura_products', JSON.stringify(products));
     } catch (e) {
       if (e.name === 'QuotaExceededError') {
-        console.error("Limite de armazenamento do navegador atingido! Use imagens menores ou vincule o Vercel Blob.");
-        alert("⚠️ O limite de memória do navegador foi atingido ao tentar salvar imagens pesadas. Tente usar fotos menores ou links externos.");
+        console.warn("Dica: Use Vercel Blob configurado para zerar esse limite.");
       }
     }
   }, [products, campaigns, contacts]);
 
-  const handleUpload = (e) => {
+  const handleUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Limite preventivo para o LocalStorage do Navegador (Max 1.5MB)
-    if (file.size > 1500 * 1024) {
-      alert("⚠️ Arquivo muito grande para o modo temporário! Por favor, use imagens menores que 1MB enquanto não ativamos o Vercel Blob.");
-      return;
-    }
+    setIsUploading(true);
+    try {
+      // ENVIAR PARA VERCEL BLOB VIA API NATIVA
+      const res = await fetch(`/api/upload?filename=${file.name}`, {
+          method: 'POST',
+          body: file,
+      });
 
-    const reader = new FileReader();
-    reader.onload = (ev) => setFormData({ ...formData, media: ev.target.result, type: file.type.startsWith('video') ? 'video' : 'image' });
-    reader.readAsDataURL(file);
+      if (!res.ok) throw new Error("Erro no upload do Vercel Blob");
+      
+      const blob = await res.json();
+      setFormData({ 
+          ...formData, 
+          media: blob.url, 
+          type: file.type.startsWith('video') ? 'video' : 'image' 
+      });
+      console.log("🔥 Upload concluído:", blob.url);
+    } catch (err) {
+      console.error("Erro no upload:", err);
+      // Fallback local caso token não configurado
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+          setFormData({ ...formData, media: ev.target.result, type: file.type.startsWith('video') ? 'video' : 'image' });
+          alert("📡 Foto temporária (Modo Local)! Para salvar permanentemente, configure o token do Vercel Blob.");
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const saveProduct = () => {
@@ -500,8 +521,15 @@ function App() {
               <X style={{ cursor: 'pointer' }} onClick={() => setShowModal(false)} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div onClick={() => fileInputRef.current.click()} style={{ height: '140px', background: '#f8fafc', border: '2px dashed #cbd5e1', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden' }}>
-                {formData.media ? <img src={formData.media} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Upload size={24} color="#94a3b8" />}
+              <div onClick={() => !isUploading && fileInputRef.current.click()} style={{ height: '140px', background: '#f8fafc', border: '2px dashed #cbd5e1', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', position: 'relative' }}>
+                {isUploading ? (
+                   <div style={{ textAlign: 'center' }}>
+                      <Activity className="animate-spin" size={24} color="#2563eb" />
+                      <div style={{ fontSize: '11px', marginTop: '8px', color: '#64748b', fontWeight: '700' }}>SUBINDO PARA NUVEM...</div>
+                   </div>
+                ) : (
+                   formData.media ? <img src={formData.media} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Upload size={24} color="#94a3b8" />
+                )}
                 <input type="file" ref={fileInputRef} hidden accept="image/*,video/*" onChange={handleUpload} />
               </div>
               <input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Nome" style={{ padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0' }} />
