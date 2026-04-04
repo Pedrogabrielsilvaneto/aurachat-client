@@ -124,6 +124,12 @@ function App() {
     setEditingCampaign(null);
   };
 
+  const toggleCampaignStatus = async (cp) => {
+    const newStatus = (cp.status === 'Ativa' || cp.status === 'active') ? 'Pausada' : 'Ativa';
+    await axios.put(`${API_URL}/campaigns`, { ...cp, status: newStatus, id: cp.id });
+    setCampaigns(campaigns.map(c => c.id === cp.id ? { ...c, status: newStatus } : c));
+  };
+
   const removeCampaign = async (id) => { 
     if(window.confirm("Excluir campanha?")) {
        await axios.delete(`${API_URL}/campaigns?id=${id}`);
@@ -802,9 +808,11 @@ function App() {
                             <td style={{ padding: '16px' }}><code style={{ fontSize: '11px', background: '#f1f5f9', padding: '4px 8px', borderRadius: '4px' }}>{cp.link}</code></td>
                             <td style={{ padding: '16px' }}>{cp.platform}</td>
                             <td style={{ padding: '16px' }}>
-                              <span style={{ padding: '4px 10px', borderRadius: '6px', background: cp.status === 'Ativa' || cp.status === 'active' ? '#f0fdf4' : '#fef2f2', color: cp.status === 'Ativa' || cp.status === 'active' ? '#16a34a' : '#ef4444', fontSize: '10px', fontWeight: '800' }}>
-                                {cp.status === 'Ativa' || cp.status === 'active' ? 'ATIVA' : 'PAUSADA'}
-                              </span>
+                              <button
+                                onClick={() => toggleCampaignStatus(cp)}
+                                style={{ padding: '4px 10px', borderRadius: '6px', border: 'none', background: cp.status === 'Ativa' || cp.status === 'active' ? '#f0fdf4' : '#fef2f2', color: cp.status === 'Ativa' || cp.status === 'active' ? '#16a34a' : '#ef4444', fontSize: '10px', fontWeight: '800', cursor: 'pointer' }}>
+                                {cp.status === 'Ativa' || cp.status === 'active' ? '● ATIVA' : '○ PAUSADA'}
+                              </button>
                             </td>
                             <td style={{ padding: '16px', textAlign: 'right' }}>
                               <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
