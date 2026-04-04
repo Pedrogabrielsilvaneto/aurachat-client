@@ -16,7 +16,7 @@ export default async function handler(req, res) {
       const hash = await bcrypt.hash('1234', salt);
       employees = [
         { id: '1', name: 'Administrador', user: 'admin', pass: hash, role: 'DIRETOR' },
-        { id: '2', name: 'Taine Neto', user: 'toine', pass: hash, role: 'DIRETORIA' }
+        { id: '2', name: 'Taine Neto', user: 'taine', pass: hash, role: 'DIRETORIA' }
       ];
       await kv.set('aura_employees', employees);
     }
