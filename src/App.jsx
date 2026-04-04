@@ -9,7 +9,7 @@ import {
   PieChart, Pie, Cell, BarChart, Bar, Legend
 } from 'recharts';
 
-import axios from 'axios';
+// import axios from 'axios'; // Comentado conforme pedido para focar 100% na Vercel
 
 const DASHBOARD_CHART_DATA = [
   { name: 'Seg', leads: 24, conversion: 18 },
@@ -28,16 +28,30 @@ const SOURCE_DATA = [
   { name: 'Indicação', value: 10, color: '#f59e0b' },
 ];
 
-const API_URL = window.location.hostname === 'localhost' 
-  ? 'http://localhost:3001' 
-  : 'http://147.15.40.68:3001'; 
+// DADOS INICIAIS CASO O LOCALSTORAGE ESTEJA VAZIO
+const DEFAULT_PRODUCTS = [
+  { id: '1', code: 'PRC-9090-PLD', name: "Porcelanato Polido 90x90 Gold", media: "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=800", type: 'image', desc: "Acabamento de alto brilho, ideal para áreas nobres." },
+  { id: '2', code: 'REV-SLM-WHT', name: "Revestimento Slim White 30x60", media: "https://images.unsplash.com/photo-1615529328331-f8917597711f?w=800", type: 'image', desc: "Paredes internas. Textura acetinada." }
+];
+
+const DEFAULT_CAMPAIGNS = [
+  { id: '1', name: 'Promoção Verão', platform: 'Instagram', link: 'ig/verao24', status: 'active', clicks: 1240, leads: 156, conversion: '12.5%' },
+  { id: '2', name: 'Black Friday', platform: 'Facebook', link: 'fb/prime', status: 'inactive', clicks: 850, leads: 42, conversion: '4.9%' }
+];
+
+const DEFAULT_CONTACTS = [
+  { id: '1', name: 'Pedro Neto', phone: '5511988887777', status: 'new', msg: 'Gostaria de saber o preço.', time: '14:20', role: 'clt' },
+  { id: '2', name: 'Maria Silva', phone: '5511977776666', status: 'active', msg: 'Pode me enviar o catálogo?', time: '13:45', role: 'terceiros' },
+  { id: '3', name: 'Jorge Oliveira', phone: '5511966665555', status: 'completed', msg: 'Pedido confirmado!', time: 'Ontem', role: 'gestao' },
+];
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [products, setProducts] = useState([]);
-  const [campaigns, setCampaigns] = useState([]);
-  const [contacts, setContacts] = useState([]);
-  const [stats, setStats] = useState({ total: 0, inService: 0, conversion: '0%', responseTime: '0s' });
+  const [products, setProducts] = useState(DEFAULT_PRODUCTS);
+  const [campaigns, setCampaigns] = useState(DEFAULT_CAMPAIGNS);
+  const [contacts, setContacts] = useState(DEFAULT_CONTACTS);
+  const [stats, setStats] = useState({ total: 128, inService: 42, conversion: '24%', responseTime: '1.2s' });
+  
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [viewing, setViewing] = useState(null);
@@ -45,30 +59,23 @@ function App() {
   const fileInputRef = useRef(null);
   const [logisticsFilter, setLogisticsFilter] = useState('all');
 
-  // CARREGAR DADOS DO BACKEND
+  // PERSISTÊNCIA 100% VERCEL (LOCALSTORAGE)
   React.useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [cRes, pRes, cpRes, sRes] = await Promise.all([
-          axios.get(`${API_URL}/contacts`),
-          axios.get(`${API_URL}/products`),
-          axios.get(`${API_URL}/campaigns`),
-          axios.get(`${API_URL}/stats`)
-        ]);
-        setContacts(cRes.data);
-        setProducts(pRes.data);
-        setCampaigns(cpRes.data);
-        setStats(sRes.data);
-      } catch (err) {
-        console.error("Erro ao carregar dados:", err);
-      }
-    };
-    fetchData();
+    const savedProducts = localStorage.getItem('aura_products');
+    const savedCampaigns = localStorage.getItem('aura_campaigns');
+    const savedContacts = localStorage.getItem('aura_contacts');
 
-    // Atualização em tempo real (Mockup simplificado do Socket.io)
-    const interval = setInterval(fetchData, 10000); // 10s para não sobrecarregar sem socket configurado
-    return () => clearInterval(interval);
+    if (savedProducts) setProducts(JSON.parse(savedProducts));
+    if (savedCampaigns) setCampaigns(JSON.parse(savedCampaigns));
+    if (savedContacts) setContacts(JSON.parse(savedContacts));
   }, []);
+
+  // SALVAR NO LOCALSTORAGE SEMPRE QUE ALGO MUDAR
+  React.useEffect(() => {
+    localStorage.setItem('aura_products', JSON.stringify(products));
+    localStorage.setItem('aura_campaigns', JSON.stringify(campaigns));
+    localStorage.setItem('aura_contacts', JSON.stringify(contacts));
+  }, [products, campaigns, contacts]);
 
   const handleUpload = (e) => {
     const file = e.target.files[0];
@@ -78,21 +85,16 @@ function App() {
     reader.readAsDataURL(file);
   };
 
-  const saveProduct = async () => {
-    try {
-      if (editing) {
-        // Lógica de edição real aqui
-      } else {
-        await axios.post(`${API_URL}/products`, formData);
-      }
-      const res = await axios.get(`${API_URL}/products`);
-      setProducts(res.data);
-      setShowModal(false);
-      setEditing(null);
-      setFormData({ name: '', code: '', media: '', type: 'image', desc: '' });
-    } catch (err) {
-      console.error("Erro ao salvar produto:", err);
+  const saveProduct = () => {
+    const newProduct = { ...formData, id: editing ? editing.id : Date.now().toString() };
+    if (editing) {
+      setProducts(products.map(p => p.id === editing.id ? newProduct : p));
+    } else {
+      setProducts([newProduct, ...products]);
     }
+    setShowModal(false);
+    setEditing(null);
+    setFormData({ name: '', code: '', media: '', type: 'image', desc: '' });
   };
 
   const startEdit = (p) => {
@@ -105,14 +107,8 @@ function App() {
     if (window.confirm("Excluir este produto?")) setProducts(products.filter(p => p.id !== id));
   };
 
-  const moveContact = async (id, newStatus) => {
-    try {
-      const contact = contacts.find(c => c.id === id);
-      await axios.put(`${API_URL}/contacts/${id}`, { status: newStatus });
-      setContacts(contacts.map(c => c.id === id ? { ...c, status: newStatus } : c));
-    } catch (err) {
-      console.error("Erro ao mover contato:", err);
-    }
+  const moveContact = (id, newStatus) => {
+    setContacts(contacts.map(c => c.id === id ? { ...c, status: newStatus } : c));
   };
 
   return (
@@ -127,7 +123,7 @@ function App() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', background: '#f0fdf4', padding: '6px 12px', borderRadius: '20px', color: '#16a34a', fontWeight: '700' }}>
-            <div style={{ width: '8px', height: '8px', background: '#16a34a', borderRadius: '50%' }} /> WhatsApp Conectado
+            <div style={{ width: '8px', height: '8px', background: '#16a34a', borderRadius: '50%' }} /> Vercel Mode
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 12px', background: '#f1f5f9', borderRadius: '10px' }}>
             <b style={{ fontSize: '13px' }}>Marcos</b> <ChevronDown size={14} />
