@@ -377,14 +377,93 @@ function App() {
             )}
 
             {selectedChat && (
-              <div style={{ width: '280px', borderLeft: '1px solid #e2e8f0', background: 'white', padding: '20px' }}>
-                 <h4 style={{ fontSize: '12px', fontWeight: '800', color: '#94a3b8', marginBottom: '15px' }}>DADOS DA VENDA</h4>
-                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <input placeholder="Valor (R$)" style={{ padding: '8px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px' }} />
-                    <select style={{ padding: '8px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px' }}>
-                       <option>PIX</option><option>Cartão</option><option>Boleto</option>
-                    </select>
-                    <button onClick={() => moveContact(selectedChat.id, 'completed')} style={{ padding: '12px', background: '#10b981', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '12px', cursor: 'pointer' }}>FINALIZAR VENDA</button>
+              <div className="animate-in" style={{ width: '320px', borderLeft: '1px solid #e2e8f0', background: 'white', padding: '24px', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '24px' }}>
+                    <div style={{ width: '60px', height: '60px', background: '#2563eb', color: 'white', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: '800', marginBottom: '10px' }}>{selectedChat.name[0]}</div>
+                    <h3 style={{ fontSize: '15px', fontWeight: '800' }}>{selectedChat.name}</h3>
+                    <p style={{ fontSize: '12px', color: '#64748b' }}>{selectedChat.phone}</p>
+                 </div>
+                 
+                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
+                       <h4 style={{ fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}><ShoppingCart size={12} /> Venda</h4>
+                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <input 
+                            placeholder="Valor R$" 
+                            defaultValue={selectedChat.saleValue || ""} 
+                            onBlur={(e) => axios.put(`${API_URL}/contacts`, { id: selectedChat.id, updates: { saleValue: e.target.value } })}
+                            style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '700' }} 
+                          />
+                          <select 
+                            value={selectedChat.paymentMethod || ""} 
+                            onChange={(e) => {
+                               const p = e.target.value;
+                               axios.put(`${API_URL}/contacts`, { id: selectedChat.id, updates: { paymentMethod: p } });
+                               setContacts(contacts.map(c => c.id === selectedChat.id ? { ...c, paymentMethod: p } : c));
+                               setSelectedChat({ ...selectedChat, paymentMethod: p });
+                            }}
+                            style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '12px', fontWeight: '600' }}>
+                             <option value="">Pagamento...</option>
+                             <option value="pix">PIX</option>
+                             <option value="card">Cartão</option>
+                             <option value="boleto">Boleto</option>
+                          </select>
+                       </div>
+                    </div>
+
+                    <div style={{ background: '#f0f9ff', padding: '16px', borderRadius: '12px', border: '1px solid #e0f2fe' }}>
+                       <h4 style={{ fontSize: '11px', fontWeight: '800', color: '#0369a1', textTransform: 'uppercase', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}><ExternalLink size={12} /> Transferir</h4>
+                       <select 
+                         onChange={(e) => {
+                            const r = e.target.value;
+                            if(r) {
+                               moveContact(selectedChat.id, 'active');
+                               axios.put(`${API_URL}/contacts`, { id: selectedChat.id, updates: { role: r } });
+                               setContacts(contacts.map(c => c.id === selectedChat.id ? { ...c, role: r } : c));
+                               alert(`Transferido para ${r.toUpperCase()}`);
+                            }
+                         }}
+                         style={{ width: '100%', padding: '8px', border: '1px solid #bae6fd', borderRadius: '6px', fontSize: '12px' }}>
+                          <option value="">Setor...</option>
+                          <option value="gestao">Gestão</option>
+                          <option value="vendas">Vendas</option>
+                          <option value="logistica">Logística</option>
+                       </select>
+                    </div>
+
+                    <div>
+                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                          <h4 style={{ fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase' }}>Interesses</h4>
+                          <Plus size={14} style={{ cursor: 'pointer', color: '#2563eb' }} onClick={() => {
+                             const search = prompt("Produto/SKU:");
+                             const found = products.find(p => p.name.toLowerCase().includes(search?.toLowerCase()) || p.code.toLowerCase().includes(search?.toLowerCase()));
+                             if(found) {
+                                const up = [...(selectedChat.interests || []), found.name];
+                                setContacts(contacts.map(c => c.id === selectedChat.id ? { ...c, interests: up } : c));
+                                axios.put(`${API_URL}/contacts`, { id: selectedChat.id, updates: { interests: up } });
+                                setSelectedChat({ ...selectedChat, interests: up });
+                             }
+                          }} />
+                       </div>
+                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {(selectedChat.interests || []).map((it, i) => (
+                             <div key={i} style={{ background: '#f8fafc', padding: '8px 12px', borderRadius: '8px', fontSize: '12px', border: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between' }}>
+                                {it} <Trash2 size={12} color="#ef4444" style={{ cursor: 'pointer' }} onClick={() => {
+                                   const up = selectedChat.interests.filter((_, idx) => idx !== i);
+                                   setContacts(contacts.map(c => c.id === selectedChat.id ? { ...c, interests: up } : c));
+                                   axios.put(`${API_URL}/contacts`, { id: selectedChat.id, updates: { interests: up } });
+                                   setSelectedChat({ ...selectedChat, interests: up });
+                                }} />
+                             </div>
+                          ))}
+                       </div>
+                    </div>
+                 </div>
+
+                 <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
+                    <button onClick={() => { moveContact(selectedChat.id, 'shipped'); setSelectedChat(null); }} style={{ width: '100%', padding: '14px', background: '#10b981', color: 'white', border: 'none', borderRadius: '10px', fontSize: '12px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                       <CheckCircle size={16} /> FINALIZAR VENDA
+                    </button>
                  </div>
               </div>
             )}
