@@ -73,7 +73,7 @@ function App() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [viewing, setViewing] = useState(null);
-  const [formData, setFormData] = useState({ name: '', code: '', media: '', type: 'image', desc: '', videoUrl: '' });
+  const [formData, setFormData] = useState({ name: '', code: '', media: '', type: 'image', desc: '', videoUrl: '', campaignId: '' });
   const [selectedChat, setSelectedChat] = useState(null);
   const [msgInput, setMsgInput] = useState('');
   const [messages, setMessages] = useState([
@@ -128,6 +128,20 @@ function App() {
     const newStatus = (cp.status === 'Ativa' || cp.status === 'active') ? 'Pausada' : 'Ativa';
     await axios.put(`${API_URL}/campaigns`, { ...cp, status: newStatus, id: cp.id });
     setCampaigns(campaigns.map(c => c.id === cp.id ? { ...c, status: newStatus } : c));
+    if (newStatus === 'Pausada' || newStatus === 'inactive' || newStatus === 'Pausada') {
+      const linkedProducts = products.filter(p => p.campaignId === cp.id);
+      const updated = products.map(p => p.campaignId === cp.id ? { ...p, active: false } : p);
+      for (const prod of linkedProducts) {
+        await axios.post(`${API_URL}/products`, { ...prod, active: false });
+      }
+      setProducts(updated);
+    } else {
+      const updated = products.map(p => p.campaignId === cp.id ? { ...p, active: true } : p);
+      for (const prod of updated.filter(p => p.campaignId === cp.id)) {
+        await axios.post(`${API_URL}/products`, { ...prod, active: true });
+      }
+      setProducts(updated);
+    }
   };
 
   const removeCampaign = async (id) => { 
@@ -199,7 +213,7 @@ function App() {
       else setProducts([newProduct, ...products]);
       setShowModal(false);
       setEditing(null);
-      setFormData({ name: '', code: '', media: '', type: 'image', desc: '', videoUrl: '' });
+      setFormData({ name: '', code: '', media: '', type: 'image', desc: '', videoUrl: '', campaignId: '' });
     } catch (err) {
       console.error("Erro ao persistir na Vercel:", err);
       setShowModal(false);
@@ -321,10 +335,14 @@ function App() {
               <button className="btn-primary" onClick={() => { setEditing(null); setFormData({name:'',code:'',media:'',type:'image',desc:''}); setShowModal(true); }}><Plus size={18} /> Novo Produto</button>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '20px' }}>
-              {products.map(p => (
-                <div key={p.id} className="card" style={{ padding: 0, overflow: 'hidden' }}>
+              {products.map(p => {
+                const linkedCampaign = campaigns.find(cp => cp.id === p.campaignId);
+                const isActive = p.active !== false && (!linkedCampaign || linkedCampaign.status === 'Ativa' || linkedCampaign.status === 'active');
+                return (
+                <div key={p.id} className="card" style={{ padding: 0, overflow: 'hidden', opacity: isActive ? 1 : 0.5 }}>
                   <div style={{ height: '160px', background: '#000', position: 'relative' }}>
                     <img src={p.media} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    {!isActive && <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '800', fontSize: '14px' }}>INATIVO</div>}
                     <div style={{ position: 'absolute', top: '8px', right: '8px', display: 'flex', gap: '4px' }}>
                       <div onClick={() => removeProduct(p.id)} style={{ padding: '6px', background: '#ef4444', color: 'white', borderRadius: '6px', cursor: 'pointer' }}><Trash2 size={14} /></div>
                       <div onClick={() => startEdit(p)} style={{ padding: '6px', background: 'white', color: '#0f172a', borderRadius: '6px', cursor: 'pointer' }}><Edit3 size={14} /></div>
@@ -333,10 +351,15 @@ function App() {
                   <div style={{ padding: '16px' }}>
                     <span style={{ fontSize: '10px', fontWeight: '800', color: '#2563eb' }}>{p.code}</span>
                     <h3 style={{ fontSize: '15px', fontWeight: '700', margin: '4px 0 12px' }}>{p.name}</h3>
+                    {linkedCampaign && (
+                      <div style={{ fontSize: '10px', color: '#64748b', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Megaphone size={10} /> {linkedCampaign.name}
+                      </div>
+                    )}
                     <button onClick={() => setViewing(p)} style={{ width: '100%', padding: '8px', background: '#f1f5f9', border: 'none', borderRadius: '6px', fontWeight: '700', cursor: 'pointer' }}>Ver Detalhes</button>
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
           </div>
         )}
@@ -831,13 +854,26 @@ function App() {
 
       {showModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div className="card" style={{ width: '350px' }}>
-            <h2 style={{ marginBottom: '15px' }}>Produto</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Nome" style={{ padding: '10px', border: '1px solid #e2e8f0', borderRadius: '6px' }} />
-              <input value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})} placeholder="SKU" style={{ padding: '10px', border: '1px solid #e2e8f0', borderRadius: '6px' }} />
-              <button className="btn-primary" onClick={saveProduct}>Salvar</button>
-              <button onClick={() => setShowModal(false)}>Fechar</button>
+          <div className="card" style={{ width: '400px', padding: '24px' }}>
+            <h2 style={{ marginBottom: '20px', fontSize: '18px', fontWeight: '800' }}>{editing ? 'Editar Produto' : 'Novo Produto'}</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Nome do Produto" style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
+              <input value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})} placeholder="SKU" style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
+              <input value={formData.media} onChange={e => setFormData({...formData, media: e.target.value})} placeholder="URL da Imagem" style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
+              <textarea value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} placeholder="Descrição" rows={3} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', resize: 'none' }} />
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px', display: 'block' }}>VINCULAR À CAMPANHA</label>
+                <select value={formData.campaignId || ''} onChange={e => setFormData({...formData, campaignId: e.target.value})} style={{ width: '100%', padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+                  <option value="">Nenhuma (Produto Geral)</option>
+                  {campaigns.map(cp => (
+                    <option key={cp.id} value={cp.id}>{cp.name} ({cp.status === 'Ativa' || cp.status === 'active' ? 'Ativa' : 'Pausada'})</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+                <button className="btn-primary" onClick={saveProduct} style={{ flex: 1, padding: '12px' }}>{editing ? 'Salvar' : 'Criar Produto'}</button>
+                <button onClick={() => setShowModal(false)} style={{ flex: 1, padding: '12px', background: '#f1f5f9', border: 'none', borderRadius: '8px' }}>Cancelar</button>
+              </div>
             </div>
           </div>
         </div>
