@@ -58,7 +58,7 @@ function App() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [viewing, setViewing] = useState(null);
-  const [formData, setFormData] = useState({ name: '', code: '', media: '', type: 'image', desc: '' });
+  const [formData, setFormData] = useState({ name: '', code: '', media: '', type: 'image', desc: '', videoUrl: '' });
   const fileInputRef = useRef(null);
   const [logisticsFilter, setLogisticsFilter] = useState('all');
 
@@ -104,6 +104,11 @@ function App() {
     const file = e.target.files[0];
     if (!file) return;
 
+    if (file.type.startsWith('video')) {
+      alert("⚠️ Padronização: Vídeos devem ser incluídos via LINK (YouTube/Drive/etc) para não sobrecarregar o sistema. Use o campo correspondente abaixo.");
+      return;
+    }
+
     setIsUploading(true);
     try {
       // NOVO: Upload DIRETO via Cliente (Contorna limite de 4.5MB)
@@ -141,7 +146,7 @@ function App() {
     }
     setShowModal(false);
     setEditing(null);
-    setFormData({ name: '', code: '', media: '', type: 'image', desc: '' });
+    setFormData({ name: '', code: '', media: '', type: 'image', desc: '', videoUrl: '' });
   };
 
   const startEdit = (p) => {
@@ -528,11 +533,12 @@ function App() {
                 ) : (
                    formData.media ? <img src={formData.media} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Upload size={24} color="#94a3b8" />
                 )}
-                <input type="file" ref={fileInputRef} hidden accept="image/*,video/*" onChange={handleUpload} />
+                <input type="file" ref={fileInputRef} hidden accept="image/*" onChange={handleUpload} />
               </div>
-              <input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Nome" style={{ padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0' }} />
-              <input value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})} placeholder="SKU" style={{ padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0' }} />
-              <textarea value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} placeholder="Descrição..." style={{ padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0', minHeight: '60px' }} />
+              <input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Nome do Produto" style={{ padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0' }} />
+              <input value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})} placeholder="SKU / Código" style={{ padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0' }} />
+              <input value={formData.videoUrl} onChange={e => setFormData({...formData, videoUrl: e.target.value})} placeholder="URL do Vídeo (Opcional)" style={{ padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0' }} />
+              <textarea value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} placeholder="Descrição técnica..." style={{ padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0', minHeight: '60px' }} />
               <button className="btn-primary" onClick={saveProduct}>Salvar</button>
             </div>
           </div>
@@ -543,8 +549,15 @@ function App() {
       {viewing && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, backdropFilter: 'blur(10px)' }}>
           <div style={{ background: 'white', borderRadius: '20px', overflow: 'hidden', width: '85vw', maxWidth: '1000px', display: 'grid', gridTemplateColumns: '1fr 350px' }}>
-            <div style={{ background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {viewing.type === 'image' ? <img src={viewing.media} style={{ width: '100%', maxHeight: '70vh', objectFit: 'contain' }} /> : <video src={viewing.media} style={{ width: '100%' }} controls autoPlay />}
+            <div style={{ background: '#000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+              <img src={viewing.media} style={{ width: '100%', maxHeight: '60vh', objectFit: 'contain' }} />
+              {viewing.videoUrl && (
+                <div style={{ width: '100%', padding: '20px', background: 'rgba(0,0,0,0.5)', borderTop: '1px solid #333' }}>
+                  <a href={viewing.videoUrl} target="_blank" rel="noreferrer" style={{ color: '#60a5fa', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
+                    <ExternalLink size={14} /> Assistir Vídeo do Produto
+                  </a>
+                </div>
+              )}
             </div>
             <div style={{ padding: '40px', position: 'relative' }}>
               <X size={24} style={{ position: 'absolute', top: '20px', right: '20px', cursor: 'pointer' }} onClick={() => setViewing(null)} />
