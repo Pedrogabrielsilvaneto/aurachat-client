@@ -206,6 +206,31 @@ function App() {
     }
   };
 
+  const handleGalleryUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+    setIsUploading(true);
+    try {
+      const currentGallery = formData.mediaGallery && formData.mediaGallery.length > 0 ? [...formData.mediaGallery] : (formData.media ? [formData.media] : []);
+      const newUrls = [];
+      for (const file of files) {
+        if (file.type.startsWith('video')) {
+          alert(`⚠️ Vídeo ignorado: ${file.name}`);
+          continue;
+        }
+        const blob = await upload(file.name, file, { access: 'public', handleUploadUrl: '/api/upload' });
+        newUrls.push(blob.url);
+      }
+      const updatedGallery = [...currentGallery, ...newUrls];
+      setFormData({ ...formData, mediaGallery: updatedGallery, media: updatedGallery[0] || formData.media });
+    } catch (err) {
+      console.error("Erro no upload da galeria:", err);
+    } finally {
+      setIsUploading(false);
+      e.target.value = '';
+    }
+  };
+
   const saveProduct = async () => {
     const newProduct = { ...formData, id: editing ? editing.id : Date.now().toString() };
     try {
@@ -874,22 +899,16 @@ function App() {
 
               <div>
                 <label style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '6px', display: 'block' }}>GALERIA DE FOTOS</label>
-                <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
-                  <input id="newImageUrl" placeholder="URL da imagem..." style={{ flex: 1, padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px' }} />
-                  <button onClick={() => {
-                    const input = document.getElementById('newImageUrl');
-                    const url = input.value.trim();
-                    if (url) {
-                      const gallery = formData.mediaGallery || [];
-                      if (gallery.length === 0 && formData.media) gallery.push(formData.media);
-                      setFormData({...formData, mediaGallery: [...gallery, url], media: gallery.length === 0 ? url : formData.media });
-                      input.value = '';
-                    }
-                  }} style={{ padding: '10px 14px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', fontSize: '16px' }}>+</button>
-                </div>
+                <button
+                  onClick={() => document.getElementById('galleryFileInput').click()}
+                  disabled={isUploading}
+                  style={{ width: '100%', padding: '12px', border: '2px dashed #e2e8f0', borderRadius: '8px', background: '#f8fafc', cursor: isUploading ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: '700', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <Upload size={16} /> {isUploading ? 'Enviando...' : 'Enviar fotos do computador'}
+                </button>
+                <input id="galleryFileInput" type="file" accept="image/*" multiple onChange={handleGalleryUpload} style={{ display: 'none' }} />
                 {(formData.mediaGallery && formData.mediaGallery.length > 0 ? formData.mediaGallery : (formData.media ? [formData.media] : [])).map((url, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px', background: '#f8fafc', borderRadius: '8px', marginBottom: '4px' }}>
-                    <img src={url} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '6px' }} />
+                    <img src={url} style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '6px' }} />
                     <span style={{ flex: 1, fontSize: '11px', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{url}</span>
                     {i === 0 && <span style={{ fontSize: '9px', fontWeight: '800', color: '#2563eb', background: '#eff6ff', padding: '2px 6px', borderRadius: '4px' }}>CAPA</span>}
                     <button onClick={() => {
