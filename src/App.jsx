@@ -189,6 +189,7 @@ function App() {
         <SidebarLink icon={<ShoppingCart size={20}/>} label="Produtos" active={activeTab === 'products'} onClick={() => setActiveTab('products')} />
         <SidebarLink icon={<Megaphone size={20}/>} label="Campanhas" active={activeTab === 'campaigns'} onClick={() => setActiveTab('campaigns')} />
         <SidebarLink icon={<Truck size={20}/>} label="Logística" active={activeTab === 'logistics'} onClick={() => setActiveTab('logistics')} />
+        <SidebarLink icon={<ShoppingCart size={20}/>} label="Compras" active={activeTab === 'compras'} onClick={() => setActiveTab('compras')} />
         <SidebarLink icon={<MessageCircle size={20}/>} label="WhatsApp" active={activeTab === 'whatsapp'} onClick={() => setActiveTab('whatsapp')} />
         <div style={{ marginTop: 'auto' }}><SidebarLink icon={<LogOut size={20}/>} label="Sair" color="#ef4444" /></div>
       </aside>
@@ -365,31 +366,73 @@ function App() {
                    </tbody>
                 </table>
              </div>
+          </div>
+        )}
 
-             {/* BLOCO COMPRADOR */}
-             <div style={{ marginTop: '24px', background: '#fff7ed', border: '1px solid #ffedd5', padding: '20px', borderRadius: '16px' }}>
-                 <h3 style={{ fontSize: '14px', fontWeight: '800', color: '#9a3412', marginBottom: '12px' }}>PAINEL DO COMPRADOR / SUPRIMENTOS</h3>
-                 <p style={{ fontSize: '12px', color: '#c2410c', marginBottom: '15px' }}>Selecione um pedido reportado para informar o novo prazo de reposição.</p>
-                 <div style={{ display: 'flex', gap: '10px' }}>
-                    <select id="buyerOrder" style={{ padding: '10px', borderRadius: '10px', border: '1px solid #fed7aa' }}>
-                       <option value="">Selecione pedido com falta...</option>
-                       {contacts.filter(c => c.status === 'failed').map(c => <option key={c.id} value={c.id}>#{c.orderNumber} - {c.name}</option>)}
-                    </select>
-                    <input id="buyerDeadline" placeholder="Prazo de Reposição (ex: 5 dias)" style={{ padding: '10px', borderRadius: '10px', border: '1px solid #fed7aa' }} />
-                    <button 
-                      onClick={() => {
-                        const id = document.getElementById('buyerOrder').value;
-                        const deadline = document.getElementById('buyerDeadline').value;
-                        if(id && deadline) {
-                           axios.put(`${API_URL}/contacts`, { id, updates: { buyerDeadline: deadline } });
-                           setContacts(contacts.map(c => c.id === id ? { ...c, buyerDeadline: deadline } : c));
-                           alert("Prazo informado ao vendedor e logística!");
-                        }
-                      }}
-                      style={{ background: '#f97316', color: 'white', padding: '10px 20px', borderRadius: '10px', border: 'none', fontWeight: '800', cursor: 'pointer' }}>
-                      INFORMAR PRAZO
-                    </button>
-                 </div>
+        {activeTab === 'compras' && (
+          <div className="animate-in">
+             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                <div>
+                  <h1 style={{ fontSize: '24px', fontWeight: '800' }}>Painel de Suprimentos / Compras</h1>
+                  <p style={{ color: '#64748b', fontSize: '13px' }}>Pedidos aguardando reposição de material no estoque.</p>
+                </div>
+                <div style={{ background: '#fff7ed', color: '#c2410c', padding: '10px 16px', borderRadius: '10px', fontSize: '12px', fontWeight: '800', border: '1px solid #ffedd5' }}>
+                  FALTAS PARA RESOLVER: {contacts.filter(c => c.status === 'failed').length}
+                </div>
+             </div>
+
+             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                   <thead style={{ background: '#fff7ed', borderBottom: '2px solid #ffedd5' }}>
+                      <tr>
+                         <th style={{ padding: '16px', fontSize: '11px', fontWeight: '800', color: '#9a3412' }}>PEDIDO / VENDEDOR</th>
+                         <th style={{ padding: '16px', fontSize: '11px', fontWeight: '800', color: '#9a3412' }}>REPORTE DA LOGÍSTICA</th>
+                         <th style={{ padding: '16px', fontSize: '11px', fontWeight: '800', color: '#9a3412' }}>PRAZO DE REPOSIÇÃO</th>
+                         <th style={{ padding: '16px', fontSize: '11px', fontWeight: '800', color: '#9a3412', textAlign: 'right' }}>AÇÕES</th>
+                      </tr>
+                   </thead>
+                   <tbody>
+                      {contacts.filter(c => c.status === 'failed').length === 0 ? (
+                         <tr><td colSpan="4" style={{ padding: '60px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>Nenhum pedido com falta de estoque reportada. 🎉</td></tr>
+                      ) : (
+                         contacts.filter(c => c.status === 'failed').map(c => (
+                            <tr key={c.id} style={{ borderBottom: '1px solid #ffedd5' }}>
+                               <td style={{ padding: '16px' }}>
+                                  <div style={{ fontWeight: '900', color: '#9a3412' }}>#{c.orderNumber || '0000'}</div>
+                                  <div style={{ fontSize: '10px', color: '#c2410c', fontWeight: '700' }}>VEND: {c.sellerName?.toUpperCase() || 'SÔNIA IA'}</div>
+                               </td>
+                               <td style={{ padding: '16px' }}>
+                                  <div style={{ fontSize: '12px', color: '#9a3412', fontWeight: '600' }}>{c.obs || "Sem descrição"}</div>
+                               </td>
+                               <td style={{ padding: '16px' }}>
+                                  <input 
+                                    defaultValue={c.buyerDeadline || ""}
+                                    placeholder="Informe o prazo..."
+                                    onBlur={(e) => {
+                                       const d = e.target.value;
+                                       axios.put(`${API_URL}/contacts`, { id: c.id, updates: { buyerDeadline: d } });
+                                       setContacts(contacts.map(item => item.id === c.id ? { ...item, buyerDeadline: d } : item));
+                                    }}
+                                    style={{ width: '100%', padding: '8px', border: '1px solid #fed7aa', borderRadius: '6px', fontSize: '12px', background: '#fffcf9' }} 
+                                  />
+                               </td>
+                               <td style={{ padding: '16px', textAlign: 'right' }}>
+                                  <button 
+                                    onClick={() => {
+                                       moveContact(c.id, 'waiting_logistics');
+                                       axios.put(`${API_URL}/contacts`, { id: c.id, updates: { obs: `✅ MATERIAL DISPONÍVEL - ${new Date().toLocaleDateString()}` } });
+                                       setContacts(contacts.map(item => item.id === c.id ? { ...item, status: 'waiting_logistics', obs: '✅ MATERIAL DISPONÍVEL' } : item));
+                                       alert("Estoque Notificado! Pedido retornou para a Logística.");
+                                    }}
+                                    style={{ padding: '10px 18px', background: '#f97316', color: 'white', border: 'none', borderRadius: '10px', fontSize: '11px', fontWeight: '800', cursor: 'pointer' }}>
+                                     PRODUTO CHEGOU
+                                  </button>
+                               </td>
+                            </tr>
+                         ))
+                      )}
+                   </tbody>
+                </table>
              </div>
           </div>
         )}
