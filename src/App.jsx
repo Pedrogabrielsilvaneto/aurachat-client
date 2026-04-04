@@ -86,6 +86,7 @@ function App() {
   const fileInputRef = useRef(null);
   const [isUploading, setIsUploading] = useState(false);
   const [logisticsSubTab, setLogisticsSubTab] = useState('new');
+  const [gestionSubTab, setGestionSubTab] = useState('users');
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -190,7 +191,8 @@ function App() {
         <SidebarLink icon={<Megaphone size={20}/>} label="Campanhas" active={activeTab === 'campaigns'} onClick={() => setActiveTab('campaigns')} />
         <SidebarLink icon={<Truck size={20}/>} label="Logística" active={activeTab === 'logistics'} onClick={() => setActiveTab('logistics')} />
         <SidebarLink icon={<ShoppingCart size={20}/>} label="Compras" active={activeTab === 'compras'} onClick={() => setActiveTab('compras')} />
-        <SidebarLink icon={<MessageCircle size={20}/>} label="WhatsApp" active={activeTab === 'whatsapp'} onClick={() => setActiveTab('whatsapp')} />
+        <SidebarLink icon={<MessageCircle size={20}/>} label="Atendimento" active={activeTab === 'whatsapp'} onClick={() => setActiveTab('whatsapp')} />
+        <SidebarLink icon={<Activity size={20}/>} label="Gestão" active={activeTab === 'gestion'} onClick={() => setActiveTab('gestion')} />
         <div style={{ marginTop: 'auto' }}><SidebarLink icon={<LogOut size={20}/>} label="Sair" color="#ef4444" /></div>
       </aside>
 
@@ -437,11 +439,94 @@ function App() {
           </div>
         )}
 
+        {activeTab === 'gestion' && (
+          <div className="animate-in">
+             <div style={{ display: 'flex', gap: '20px', marginBottom: '25px' }}>
+                <button 
+                  onClick={() => setGestionSubTab('users')} 
+                  style={{ 
+                    padding: '10px 20px', borderRadius: '10px', border: 'none', background: (gestionSubTab || 'users') === 'users' ? '#2563eb' : '#f1f5f9', color: (gestionSubTab || 'users') === 'users' ? 'white' : '#64748b', fontSize: '13px', fontWeight: '800', cursor: 'pointer' 
+                  }}>CADASTRO FUNCIONÁRIO</button>
+                <button 
+                  onClick={() => setGestionSubTab('clients')} 
+                  style={{ 
+                    padding: '10px 20px', borderRadius: '10px', border: 'none', background: (gestionSubTab || 'users') === 'clients' ? '#2563eb' : '#f1f5f9', color: (gestionSubTab || 'users') === 'clients' ? 'white' : '#64748b', fontSize: '13px', fontWeight: '800', cursor: 'pointer' 
+                  }}>CADASTRO DE CLIENTES</button>
+             </div>
+
+             {gestionSubTab === 'users' && (
+               <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                     <thead style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                        <tr>
+                           <th style={{ padding: '16px', fontSize: '11px', fontWeight: '800' }}>NOME</th>
+                           <th style={{ padding: '16px', fontSize: '11px', fontWeight: '800' }}>USUÁRIO</th>
+                           <th style={{ padding: '16px', fontSize: '11px', fontWeight: '800' }}>PERMISSÃO</th>
+                           <th style={{ padding: '16px', fontSize: '11px', fontWeight: '800' }}>SENHA (CRYPT)</th>
+                        </tr>
+                     </thead>
+                     <tbody>
+                        {[
+                          { name: 'Marcos Neto', user: 'marcos.diretoria', pass: '********', role: 'DIRETOR' },
+                          { name: 'Sônia IA', user: 'sonia.bot', pass: 'TOKEN_JWT', role: 'VENDEDORA' },
+                          { name: 'Expedição 01', user: 'logistica.estoque', pass: '********', role: 'LOGÍSTICA' }
+                        ].map((u, i) => (
+                           <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                              <td style={{ padding: '16px', fontWeight: '800', fontSize: '13px' }}>{u.name}</td>
+                              <td style={{ padding: '16px', color: '#64748b' }}>{u.user}</td>
+                              <td style={{ padding: '16px' }}>
+                                 <span style={{ padding: '4px 8px', borderRadius: '6px', background: '#eff6ff', color: '#2563eb', fontSize: '10px', fontWeight: '800' }}>{u.role}</span>
+                              </td>
+                              <td style={{ padding: '16px' }}><code>{u.pass}</code></td>
+                           </tr>
+                        ))}
+                     </tbody>
+                  </table>
+               </div>
+             )}
+
+             {gestionSubTab === 'clients' && (
+               <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                  <div style={{ padding: '16px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between' }}>
+                     <h2 style={{ fontSize: '15px', fontWeight: '800' }}>Base de Clientes Unificada</h2>
+                     <span style={{ fontSize: '12px', color: '#64748b' }}>TOTAL: {contacts.length} REGISTROS</span>
+                  </div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                     <thead style={{ borderBottom: '1px solid #eee' }}>
+                        <tr style={{ background: '#fafafa' }}>
+                           <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800' }}>CLIENTE</th>
+                           <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800' }}>TELEFONE</th>
+                           <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800' }}>PERFIL</th>
+                           <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800' }}>TAGS / INTERESSES</th>
+                        </tr>
+                     </thead>
+                     <tbody>
+                        {contacts.map(c => (
+                           <tr key={c.id} style={{ borderBottom: '1px solid #f8fafc' }}>
+                              <td style={{ padding: '12px 16px', fontWeight: '800', fontSize: '13px' }}>{c.name}</td>
+                              <td style={{ padding: '12px 16px', color: '#64748b' }}>{c.phone}</td>
+                              <td style={{ padding: '12px 16px' }}>
+                                 <span style={{ color: '#2563eb', fontSize: '11px', fontWeight: '700' }}>{c.role?.toUpperCase() || 'MKT LEAD'}</span>
+                              </td>
+                              <td style={{ padding: '12px 16px' }}>
+                                 <div style={{ display: 'flex', gap: '4px' }}>
+                                    {(c.interests || []).map((it, i) => <span key={i} style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', fontSize: '10px' }}>{it}</span>)}
+                                 </div>
+                              </td>
+                           </tr>
+                        ))}
+                     </tbody>
+                  </table>
+               </div>
+             )}
+          </div>
+        )}
+
         {activeTab === 'whatsapp' && (
           <div className="animate-in" style={{ height: 'calc(100vh - 120px)', background: 'white', borderRadius: '20px', border: '1px solid #e2e8f0', display: 'flex', overflow: 'hidden' }}>
             <div style={{ width: '320px', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
               <div style={{ padding: '20px', borderBottom: '1px solid #e2e8f0' }}>
-                <h2 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '15px' }}>Mensagens</h2>
+                <h2 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '15px' }}>Fila de Atendimento</h2>
                 <input placeholder="Buscar..." style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc' }} />
               </div>
               <div style={{ flex: 1, overflowY: 'auto' }}>
