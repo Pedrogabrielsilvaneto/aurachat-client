@@ -1,12 +1,23 @@
-import React, { useState, useRef } from 'react';
 import { 
-  ShoppingCart, Truck, MessageCircle, Search, Plus, Zap, LogOut, LayoutDashboard,
-  ChevronDown, MessageSquare as MessageSquareIcon, Edit3, Save, X, Trash2, Maximize2, Upload, CheckCircle
-} from 'lucide-react';
+  LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, BarChart, Bar, Legend
+} from 'recharts';
 
-const INITIAL_PRODUCTS = [
-  { id: '1', code: 'PRC-9090-PLD', name: "Porcelanato Polido 90x90 Gold", media: "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=800", type: 'image', desc: "Acabamento de alto brilho, ideal para áreas nobres." },
-  { id: '2', code: 'REV-SLM-WHT', name: "Revestimento Slim White 30x60", media: "https://images.unsplash.com/photo-1615529328331-f8917597711f?w=800", type: 'image', desc: "Paredes internas. Textura acetinada." },
+const DASHBOARD_CHART_DATA = [
+  { name: 'Seg', leads: 24, conversion: 18 },
+  { name: 'Ter', leads: 31, conversion: 22 },
+  { name: 'Qua', leads: 28, conversion: 20 },
+  { name: 'Qui', leads: 39, conversion: 28 },
+  { name: 'Sex', leads: 45, conversion: 32 },
+  { name: 'Sab', leads: 52, conversion: 38 },
+  { name: 'Dom', leads: 18, conversion: 12 },
+];
+
+const SOURCE_DATA = [
+  { name: 'Instagram', value: 45, color: '#d946ef' },
+  { name: 'Google Ads', value: 30, color: '#2563eb' },
+  { name: 'Direto/WA', value: 15, color: '#10b981' },
+  { name: 'Indicação', value: 10, color: '#f59e0b' },
 ];
 
 function App() {
@@ -63,8 +74,13 @@ function App() {
           <Search size={16} style={{ position: 'absolute', left: '12px', top: '10px' }} color="#64748b" />
           <input className="search-bar" placeholder="Pesquisar..." style={{ paddingLeft: '40px' }} />
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 12px', background: '#f1f5f9', borderRadius: '10px' }}>
-          <b style={{ fontSize: '13px' }}>Marcos</b> <ChevronDown size={14} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', background: '#f0fdf4', padding: '6px 12px', borderRadius: '20px', color: '#16a34a', fontWeight: '700' }}>
+            <div style={{ width: '8px', height: '8px', background: '#16a34a', borderRadius: '50%' }} /> WhatsApp Conectado
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 12px', background: '#f1f5f9', borderRadius: '10px' }}>
+            <b style={{ fontSize: '13px' }}>Marcos Neto</b> <ChevronDown size={14} />
+          </div>
         </div>
       </header>
 
@@ -79,32 +95,100 @@ function App() {
       <main className="main-content">
         {activeTab === 'dashboard' && (
           <div className="animate-in">
-            <h1 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '24px' }}>Visão Geral</h1>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+               <h1 style={{ fontSize: '24px', fontWeight: '800' }}>Painel do Proprietário</h1>
+               <div style={{ display: 'flex', gap: '10px' }}>
+                  <button style={{ padding: '8px 16px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>Exportar Relatório</button>
+                  <button className="btn-primary">Visualizar Metas</button>
+               </div>
+            </div>
+            
             <div className="kpi-grid">
               <div className="card">
-                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>TOTAL DE LEADS</span>
+                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>LEADS TOTAIS</span>
                 <h2 style={{ fontSize: '32px', fontWeight: '800', marginTop: '8px' }}>{stats.total}</h2>
-                <div style={{ color: '#16a34a', fontSize: '12px', marginTop: '4px', fontWeight: '600' }}>+12% vs ontem</div>
+                <div style={{ color: '#16a34a', fontSize: '12px', marginTop: '4px', fontWeight: '600' }}>+12% vs mês anterior</div>
               </div>
               <div className="card">
-                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>EM ATENDIMENTO</span>
-                <h2 style={{ fontSize: '32px', fontWeight: '800', marginTop: '8px' }}>{stats.inService}</h2>
-                <div style={{ color: '#2563eb', fontSize: '12px', marginTop: '4px', fontWeight: '600' }}>6 consultores ativos</div>
-              </div>
-              <div className="card">
-                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>TAXA DE CONVERSÃO</span>
+                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>CONVERSÃO MÉDIA</span>
                 <h2 style={{ fontSize: '32px', fontWeight: '800', marginTop: '8px' }}>{stats.conversion}</h2>
-                <div style={{ color: '#16a34a', fontSize: '12px', marginTop: '4px', fontWeight: '600' }}>Meta: 20%</div>
+                <div style={{ color: '#2563eb', fontSize: '12px', marginTop: '4px', fontWeight: '600' }}>Acima da meta (20%)</div>
               </div>
               <div className="card">
-                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>RESPOSTA IA</span>
+                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>TEMPO DE RESPOSTA</span>
                 <h2 style={{ fontSize: '32px', fontWeight: '800', marginTop: '8px' }}>{stats.responseTime}</h2>
-                <div style={{ color: '#16a34a', fontSize: '12px', marginTop: '4px', fontWeight: '600' }}>Status: Operacional</div>
+                <div style={{ color: '#16a34a', fontSize: '12px', marginTop: '4px', fontWeight: '600' }}>Eficiência Ultra</div>
+              </div>
+              <div className="card">
+                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>CUSTO POR LEAD (CPL)</span>
+                <h2 style={{ fontSize: '32px', fontWeight: '800', marginTop: '8px' }}>R$ 4,20</h2>
+                <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontWeight: '600' }}>Tendência de alta</div>
               </div>
             </div>
 
-            <div className="card" style={{ marginTop: '24px', minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderStyle: 'dotted', color: '#94a3b8' }}>
-              Gráficos de Performance do Pereira Acabamentos em tempo real.
+            <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '24px', marginTop: '24px' }}>
+              <div className="card" style={{ height: '400px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', marginBottom: '20px' }}>Engajamento de Leads (7 dias)</h3>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={DASHBOARD_CHART_DATA}>
+                    <defs>
+                      <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#2563eb" stopOpacity={0.1}/>
+                        <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#94a3b8'}} />
+                    <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#94a3b8'}} />
+                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                    <Area type="monotone" dataKey="leads" stroke="#2563eb" strokeWidth={3} fillOpacity={1} fill="url(#colorLeads)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="card" style={{ height: '400px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', marginBottom: '20px' }}>Distribuição por Canal</h3>
+                <ResponsiveContainer width="100%" height="80%">
+                  <PieChart>
+                    <Pie data={SOURCE_DATA} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                      {SOURCE_DATA.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                    </Pie>
+                    <Tooltip />
+                    <Legend verticalAlign="bottom" align="center" iconType="circle" />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginTop: '24px' }}>
+               <div className="card" style={{ background: '#0f172a', color: 'white' }}>
+                  <h4 style={{ fontSize: '14px', opacity: 0.8 }}>Sonia IA Status</h4>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
+                    <div style={{ width: '10px', height: '10px', background: '#22c55e', borderRadius: '50%' }} />
+                    <b style={{ fontSize: '18px' }}>Ativa & Aprendendo</b>
+                  </div>
+                  <p style={{ fontSize: '12px', marginTop: '8px', opacity: 0.6 }}>92% de assertividade nas respostas</p>
+               </div>
+               <div className="card">
+                  <h4 style={{ fontSize: '14px', color: '#64748b' }}>Ações Rápidas</h4>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px' }}>
+                    <button style={{ padding: '6px 12px', background: '#f1f5f9', border: 'none', borderRadius: '6px', fontSize: '12px', cursor: 'pointer' }}>Broadcast</button>
+                    <button style={{ padding: '6px 12px', background: '#f1f5f9', border: 'none', borderRadius: '6px', fontSize: '12px', cursor: 'pointer' }}>Pausar Sonia</button>
+                    <button style={{ padding: '6px 12px', background: '#f1f5f9', border: 'none', borderRadius: '6px', fontSize: '12px', cursor: 'pointer' }}>Transferência</button>
+                  </div>
+               </div>
+               <div className="card">
+                  <h4 style={{ fontSize: '14px', color: '#64748b' }}>Meta de Vendas</h4>
+                  <div style={{ marginTop: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
+                      <b>Progresso Mês</b>
+                      <span>72%</span>
+                    </div>
+                    <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ width: '72%', height: '100%', background: '#2563eb' }} />
+                    </div>
+                  </div>
+               </div>
             </div>
           </div>
         )}
