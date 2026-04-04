@@ -94,6 +94,7 @@ function App() {
   
   const [showClientModal, setShowClientModal] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
+  const [viewingClientFull, setViewingClientFull] = useState(null);
 
   const saveEmployee = async () => {
     if (editingEmployee) {
@@ -548,7 +549,9 @@ function App() {
                      <tbody>
                         {contacts.map(c => (
                            <tr key={c.id} style={{ borderBottom: '1px solid #f8fafc' }}>
-                              <td style={{ padding: '12px 16px', fontWeight: '800', fontSize: '13px' }}>{c.name}</td>
+                              <td style={{ padding: '12px 16px', fontWeight: '800', fontSize: '13px', cursor: 'pointer', color: '#2563eb', textDecoration: 'underline' }} onClick={() => setViewingClientFull(c)}>
+                                 {c.name}
+                              </td>
                               <td style={{ padding: '12px 16px', color: '#64748b' }}>{c.phone}</td>
                               <td style={{ padding: '12px 16px' }}>
                                  <span style={{ color: '#2563eb', fontSize: '11px', fontWeight: '700' }}>{c.role?.toUpperCase() || 'MKT LEAD'}</span>
@@ -791,6 +794,72 @@ function App() {
           </div>
         </div>
       )}
+      {viewingClientFull && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1300 }}>
+          <div className="card animate-in" style={{ width: '900px', maxHeight: '90vh', overflowY: 'auto', padding: '0' }}>
+            <div style={{ padding: '24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', position: 'sticky', top: 0, zIndex: 10 }}>
+               <div>
+                  <h2 style={{ fontSize: '20px', fontWeight: '800' }}>Prontuário do Cliente: {viewingClientFull.name}</h2>
+                  <p style={{ fontSize: '13px', color: '#64748b' }}>Análise detalhada de comportamento e histórico.</p>
+               </div>
+               <button onClick={() => setViewingClientFull(null)} style={{ padding: '8px 16px', background: '#ef4444', color: 'white', borderRadius: '8px', border: 'none', fontWeight: '800', cursor: 'pointer' }}>FECHAR</button>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '20px', padding: '24px' }}>
+               {/* LADO ESQUERDO: INFOS */}
+               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                  <div style={{ background: '#f0f9ff', padding: '20px', borderRadius: '16px', border: '1px solid #e0f2fe' }}>
+                     <h4 style={{ fontSize: '11px', fontWeight: '800', color: '#0369a1', textTransform: 'uppercase', marginBottom: '15px' }}>Dados do Perfil</h4>
+                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px' }}>
+                        <div><b>WhatsApp:</b> {viewingClientFull.phone}</div>
+                        <div><b>Tipo:</b> {viewingClientFull.role?.toUpperCase() || 'CLIENTE'}</div>
+                        <div><b>Status atual:</b> {viewingClientFull.status?.toUpperCase() || 'NOVO'}</div>
+                        <div style={{ marginTop: '10px' }}>
+                           <b>Interesses Marcados:</b>
+                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginTop: '5px' }}>
+                              {(viewingClientFull.interests || []).map((it, i) => <span key={i} style={{ background: '#2563eb', color: 'white', padding: '4px 8px', borderRadius: '6px', fontSize: '10px' }}>{it}</span>)}
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+
+                  <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                     <h4 style={{ fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '15px' }}>Histórico Financeiro</h4>
+                     {viewingClientFull.orderNumber ? (
+                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}><b>Pedido Nº:</b> <span>#{viewingClientFull.orderNumber}</span></div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}><b>Valor:</b> <span>R$ {viewingClientFull.saleValue || "0,00"}</span></div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}><b>Prazo Venda:</b> <span>{viewingClientFull.deliveryDeadline || "N/A"}</span></div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}><b>Vendedor:</b> <span>{viewingClientFull.sellerName || "Direto"}</span></div>
+                          <div style={{ background: '#16a34a', color: 'white', padding: '8px', borderRadius: '8px', marginTop: '10px', textAlign: 'center', fontWeight: '800' }}>VENDA CONFIRMADA</div>
+                       </div>
+                     ) : (
+                       <p style={{ fontSize: '12px', color: '#64748b', textAlign: 'center' }}>Nenhum pedido finalizado ainda.</p>
+                     )}
+                  </div>
+               </div>
+
+               {/* LADO DIREITO: CHAT LOG */}
+               <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '16px', display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ padding: '16px', borderBottom: '1px solid #eee', fontWeight: '800', fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '8px' }}><MessageCircle size={14} /> TRANSCRIÇÃO DAS CONVERSAS</div>
+                  <div style={{ flex: 1, padding: '20px', maxHeight: '400px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', background: '#f8fafc' }}>
+                     {(viewingClientFull.msgs || []).length > 0 ? (
+                        viewingClientFull.msgs.map((m, i) => (
+                           <div key={i} style={{ alignSelf: m.type === 'in' ? 'flex-start' : 'flex-end', background: m.type === 'in' ? 'white' : '#2563eb', color: m.type === 'in' ? 'black' : 'white', padding: '10px 15px', borderRadius: '12px', fontSize: '13px', border: '1px solid #eee', maxWidth: '80%' }}>
+                              {m.text}
+                              <div style={{ fontSize: '9px', opacity: 0.6, marginTop: '4px', textAlign: 'right' }}>{m.time} {m.bot && '(SÔNIA IA)'}</div>
+                           </div>
+                        ))
+                     ) : (
+                        <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>Nenhuma conversa registrada.</div>
+                     )}
+                  </div>
+               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showEmployeeModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200 }}>
           <div className="card animate-in" style={{ width: '400px', padding: '32px' }}>
