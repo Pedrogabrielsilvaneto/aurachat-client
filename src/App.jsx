@@ -1,282 +1,259 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, TrendingUp, ShoppingCart, Truck, AlertTriangle, 
-  MessageCircle, Eye, HandPointing as Hand, ArrowRight, 
-  Plus, Key, RefreshCcw, Power, UserPlus, Search, 
-  ChevronDown, LayoutDashboard, Settings, LogOut, DollarSign,
-  BarChart, Zap, Clock, CheckCircle, Package, Send,
-  MapPin, ClipboardList, CheckCircle2, MoreHorizontal, Camera,
-  ShieldAlert, UserCheck, MessageSquare, ArrowLeft, Ghost,
-  Hash, User, Bell, Share2, Paperclip, Smile, Mic, Check, CheckCheck
+  MessageCircle, Eye, Search, Plus, Key, Power, UserPlus, 
+  LayoutDashboard, Settings, LogOut, DollarSign, Zap, 
+  Clock, CheckCircle, Package, Send, Bell, Sun, Moon,
+  MoreVertical, ChevronRight, User, Ghost, ShieldAlert,
+  ArrowLeft, Paperclip, Smile
 } from 'lucide-react';
 
 // ==========================================
-// MOCK DATA - WHATSAPP STYLE INTERNAL
+// MOCK DATA - PADRÃO VISUAL ABSOLUTO
 // ==========================================
-const TEAM_CONTACTS = [
-  { id: 1, name: "Maria Vendas", sector: "Comercial", status: "Online", img: "MV", lastSeen: "10:30" },
-  { id: 2, name: "Roberto Log", sector: "Logística", status: "Ausente", img: "RL", lastSeen: "Ontem" },
-  { id: 3, name: "Cláudia Compras", sector: "Suprimentos", status: "Offline", img: "CC", lastSeen: "15:45" },
-  { id: 4, name: "Pedro Gestor", sector: "Diretoria", status: "Online", img: "PG", lastSeen: "agora" },
-];
-
-const INITIAL_INTERNAL_MSGS = [
-  { id: 10, from: 2, text: "Maria, o carregamento do 90x90 já está no caminhão 2.", time: "10:15", status: "read", me: false },
-  { id: 11, from: 1, text: "Ótimo Roberto! O cliente João Silva estava perguntando.", time: "10:16", status: "read", me: true },
-  { id: 12, from: 2, text: "Vou sinalizar aqui como Saiu para Entrega no painel.", time: "10:20", status: "delivered", me: false },
+const INITIAL_TEAM = [
+  { id: 1, name: "Maria Vendas", role: "Vendedora", status: "Online", sector: "Vendas", activeChats: [
+    { id: 201, customer: "João Silva", lastMsg: "Qual o prazo do 90x90?" },
+    { id: 202, customer: "Ana Revest", lastMsg: "Manda o link do boleto." }
+  ], waiting: 2 },
+  { id: 2, name: "Roberto Log", role: "Logística", status: "Online", sector: "Entrega", activeChats: [
+    { id: 203, customer: "Entrega #559", lastMsg: "Já estou no local." }
+  ], waiting: 0 },
+  { id: 3, name: "Aura IA", role: "Autônomo", status: "Ativa 24/7", sector: "IA", activeChats: [], waiting: 5 },
 ];
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [selectedInternalUser, setSelectedInternalUser] = useState(TEAM_CONTACTS[0]);
-  const [internalMessages, setInternalMessages] = useState(INITIAL_INTERNAL_MSGS);
-  const [inputText, setInputText] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-  const [showAttachModal, setShowAttachModal] = useState(false);
-  
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [selectedAttendant, setSelectedAttendant] = useState(null);
+  const [selectedSpyChat, setSelectedSpyChat] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(localStorage.getItem('aura_token') === 'verified');
-
-  // Simular Envio de Mensagem (UX WhatsApp)
-  const handleSendInternal = (e) => {
-    e.preventDefault();
-    if (!inputText.trim()) return;
-
-    const newMsg = {
-      id: Date.now(),
-      from: 4, // "Eu"
-      text: inputText,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      status: 'sent',
-      me: true
-    };
-
-    setInternalMessages([...internalMessages, newMsg]);
-    setInputText("");
-
-    // Simular "Digitando..." do outro
-    setTimeout(() => {
-      setIsTyping(true);
-      setTimeout(() => {
-        setIsTyping(false);
-        const reply = {
-          id: Date.now() + 1,
-          from: selectedInternalUser.id,
-          text: "Recebido! Vou verificar agora mesmo.",
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          status: 'read',
-          me: false
-        };
-        setInternalMessages(prev => [...prev, reply]);
-      }, 2000);
-    }, 1000);
-  };
 
   if (!isAuthenticated) return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
 
   return (
-    <div className="flex h-screen bg-[#f0f2f5] text-[#0f172a] overflow-hidden" style={{ display: 'flex' }}>
+    <div className={`app-container ${isDarkMode ? 'dark' : ''}`}>
       
-      {/* SIDEBAR PRINCIPAL (ÍCONES) */}
-      <aside style={{ width: '68px', background: 'white', borderRight: '1px solid #d1d7db', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 0', gap: '24px' }}>
-         <div style={{ background: '#2563eb', padding: '10px', borderRadius: '12px', marginBottom: '20px' }}>
-            <Zap size={24} color="white" />
-         </div>
-         <SidebarIcon icon={<LayoutDashboard size={24}/>} active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
-         <SidebarIcon icon={<Truck size={24}/>} active={activeTab === 'logistics'} onClick={() => setActiveTab('logistics')} />
-         <SidebarIcon icon={<MessageSquare size={24}/>} active={activeTab === 'internal_chat'} onClick={() => setActiveTab('internal_chat')} badge={3} />
-         <SidebarIcon icon={<Users size={24}/>} active={activeTab === 'team'} onClick={() => setActiveTab('team')} />
-         
-         <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <SidebarIcon icon={<Settings size={24}/>} />
-            <div onClick={() => { localStorage.removeItem('aura_token'); setIsAuthenticated(false); }} style={{ cursor: 'pointer', color: '#ef4444' }}><LogOut size={24}/></div>
-         </div>
+      {/* HEADER UNIFICADO (image_0.png Standard) */}
+      <header className="header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ background: '#2563eb', padding: '10px', borderRadius: '12px' }}>
+            <Zap size={22} color="white" />
+          </div>
+          <span style={{ fontWeight: '800', fontSize: '22px', color: '#0f172a' }}>AuraChat</span>
+        </div>
+
+        <div style={{ position: 'relative' }}>
+          <Search size={18} color="#64748b" style={{ position: 'absolute', left: '16px', top: '10px' }} />
+          <input type="text" className="search-bar" placeholder="Pesquisar..." style={{ paddingLeft: '44px' }} />
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+           <div onClick={() => setIsDarkMode(!isDarkMode)} style={{ cursor: 'pointer', color: '#64748b' }}>
+              {isDarkMode ? <Sun size={20}/> : <Moon size={20}/>}
+           </div>
+           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 12px', background: '#f1f5f9', borderRadius: '12px' }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#2563eb', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold' }}>G</div>
+              <span style={{ fontSize: '14px', fontWeight: '600' }}>Gestor</span>
+           </div>
+        </div>
+      </header>
+
+      {/* SIDEBAR COMPLETA */}
+      <aside className="sidebar">
+        <SidebarLink icon={<LayoutDashboard size={20}/>} label="Dashboard" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
+        <SidebarLink icon={<MessageCircle size={20}/>} label="WhatsApp" active={activeTab === 'whatsapp'} />
+        <SidebarLink icon={<Truck size={20}/>} label="Logística" active={activeTab === 'logistics'} />
+        <SidebarLink icon={<ShoppingCart size={20}/>} label="Compras" />
+        
+        <div style={{ margin: '12px 0', height: '1px', background: '#f1f5f9' }} />
+        
+        <SidebarLink icon={<MessageSquare size={20}/>} label="Internal Chat" active={activeTab === 'internal'} onClick={() => setActiveTab('internal')} variant="highlight" />
+        
+        <div style={{ marginTop: 'auto' }}>
+           <SidebarLink icon={<Settings size={20}/>} label="Configurações" />
+           <SidebarLink icon={<LogOut size={20}/>} label="Sair" color="#ef4444" onClick={() => { localStorage.removeItem('aura_token'); setIsAuthenticated(false); }} />
+        </div>
       </aside>
 
-      {/* ÁREA DE CONTEÚDO DINÂMICO */}
-      <main style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      {/* MAIN CONTENT AREA */}
+      <main className="main-content">
         
-        {activeTab === 'dashboard' && <h1 className="p-8">Dashboard Global Em Breve</h1>}
-        
-        {/* MÓDULO INTERNO ESTILO WHATSAPP */}
-        {activeTab === 'internal_chat' && (
-           <div className="animate-view" style={{ flex: 1, display: 'grid', gridTemplateColumns: '380px 1fr', background: 'white' }}>
-              
-              {/* Coluna Esquerda: Contatos Internos */}
-              <div style={{ borderRight: '1px solid #d1d7db', display: 'flex', flexDirection: 'column' }}>
-                 <div style={{ padding: '16px', background: '#f0f2f5', borderBottom: '1px solid #d1d7db', display: 'flex', justifyContent: 'space-between' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#2563eb', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>PG</div>
-                    <div style={{ display: 'flex', gap: '16px', alignItems: 'center', color: '#54656f' }}>
-                       <Users size={22} style={{ cursor: 'pointer' }} />
-                       <Plus size={22} style={{ cursor: 'pointer' }} onClick={() => alert('Nova conversa interna')} />
-                       <MoreHorizontal size={22} style={{ cursor: 'pointer' }} />
-                    </div>
-                 </div>
+        {activeTab === 'dashboard' && (
+          <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+             
+             {/* CARDS DE KPI ALINHADOS */}
+             <div className="kpi-grid">
+                <KPICard label="Faturamento Mês" value="R$ 142.500" trend="+12%" icon={<DollarSign size={20}/>} color="#2563eb" />
+                <KPICard label="Volume Vendido" value="1.840 m²" trend="+8%" icon={<Package size={20}/>} color="#8b5cf6" />
+                <KPICard label="Leads Ativos (IA/Hum)" value="48 / 12" trend="80% IA" icon={<Zap size={20}/>} color="#10b981" />
+                <KPICard label="Gargalos (Atrasos)" value="03" trend="Urgente" icon={<AlertTriangle size={20}/>} color="#ef4444" />
+             </div>
 
-                 <div style={{ padding: '8px 16px', background: 'white' }}>
-                    <div style={{ background: '#f0f2f5', borderRadius: '8px', display: 'flex', alignItems: 'center', padding: '8px 14px' }}>
-                       <Search size={18} color="#54656f" style={{ marginRight: '14px' }} />
-                       <input type="text" placeholder="Pesquisar funcionário ou setor..." style={{ background: 'transparent', border: 'none', outline: 'none', width: '100%', fontSize: '14px' }} />
-                    </div>
-                 </div>
+             <div style={{ display: 'grid', gridTemplateColumns: selectedAttendant ? '1fr 400px' : '1fr', gap: '24px', flex: 1 }}>
+                
+                {/* TABELA DE SUPERVISÃO CENTRAL */}
+                <div className="table-container card" style={{ padding: 0 }}>
+                   <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between' }}>
+                      <h3 style={{ fontSize: '16px', fontWeight: '700' }}>Supervisão de Atendimentos de Equipe</h3>
+                      <button className="btn-primary" style={{ padding: '6px 12px', fontSize: '13px' }}>Filtros Avançados</button>
+                   </div>
+                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead style={{ background: '#f8fafc', fontSize: '12px', color: '#64748b', textTransform: 'uppercase' }}>
+                         <tr>
+                           <th style={{ padding: '16px', textAlign: 'left' }}>Atendente</th>
+                           <th style={{ padding: '16px', textAlign: 'left' }}>Setor</th>
+                           <th style={{ padding: '16px', textAlign: 'center' }}>Chats Ativos</th>
+                           <th style={{ padding: '16px', textAlign: 'center' }}>Chats Espera</th>
+                           <th style={{ padding: '16px', textAlign: 'right' }}>Ação Espião</th>
+                         </tr>
+                      </thead>
+                      <tbody>
+                         {INITIAL_TEAM.map(u => (
+                           <tr key={u.id} style={{ borderBottom: '1px solid var(--border)', background: selectedAttendant?.id === u.id ? '#eff6ff' : 'transparent' }}>
+                              <td style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                 <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#2563eb', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '10px' }}>{u.name[0]}</div>
+                                 <b style={{ fontSize: '14px' }}>{u.name}</b>
+                              </td>
+                              <td style={{ padding: '16px', fontSize: '14px' }}>{u.sector}</td>
+                              <td style={{ padding: '16px', textAlign: 'center' }}>
+                                 <span style={{ color: '#10b981', fontWeight: 'bold' }}>{u.activeChats.length}</span>
+                              </td>
+                              <td style={{ padding: '16px', textAlign: 'center' }}>
+                                 <span style={{ color: u.waiting > 0 ? '#ef4444' : '#64748b' }}>{u.waiting}</span>
+                              </td>
+                              <td style={{ padding: '16px', textAlign: 'right' }}>
+                                 <button onClick={() => setSelectedAttendant(u)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2563eb' }}>
+                                    <Eye size={18} />
+                                 </button>
+                              </td>
+                           </tr>
+                         ))}
+                      </tbody>
+                   </table>
+                </div>
 
-                 <div style={{ flex: 1, overflowY: 'auto' }}>
-                    {TEAM_CONTACTS.map(contact => (
-                       <ContactRow key={contact.id} contact={contact} active={selectedInternalUser.id === contact.id} onClick={() => setSelectedInternalUser(contact)} />
-                    ))}
-                 </div>
-              </div>
+                {/* PAINEL DIREITO: MODO ESPIÃO (Hierarquia Standard) */}
+                {selectedAttendant && (
+                   <div className="card animate-in" style={{ padding: 0, display: 'flex', flexDirection: 'column', background: '#fcfcfc' }}>
+                      <div style={{ padding: '20px', background: '#fef2f2', borderBottom: '1px solid #fee2e2', borderRadius: '12px 12px 0 0', display: 'flex', justifyContent: 'space-between' }}>
+                         <div>
+                            <h3 style={{ fontSize: '14px', fontWeight: '800', color: '#ef4444' }}>MODO ESPIÃO ATIVO</h3>
+                            <p style={{ fontSize: '12px', color: '#ef4444' }}>Monitorando: {selectedAttendant.name}</p>
+                         </div>
+                         <button onClick={() => { setSelectedAttendant(null); setSelectedSpyChat(null); }} style={{ height: '24px', opacity: 0.5 }}>×</button>
+                      </div>
 
-              {/* Coluna Direita: Chat WhatsApp Style */}
-              <div style={{ display: 'flex', flexDirection: 'column', background: '#efeae2', position: 'relative' }}>
-                 
-                 {/* Header Chat */}
-                 <div style={{ padding: '10px 16px', background: '#f0f2f5', borderBottom: '1px solid #d1d7db', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                       <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>{selectedInternalUser.img}</div>
-                       <div>
-                          <p style={{ fontSize: '16px', color: '#111b21', fontWeight: '500' }}>{selectedInternalUser.name} <span style={{ fontSize: '11px', color: '#64748b', marginLeft: '4px', background: '#e2e8f0', padding: '2px 6px', borderRadius: '4px' }}>{selectedInternalUser.sector}</span></p>
-                          <p style={{ fontSize: '12px', color: '#667781' }}>{isTyping ? 'digitando...' : `visto por último: ${selectedInternalUser.lastSeen}`}</p>
-                       </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '20px', color: '#54656f' }}>
-                       <Search size={20} style={{ cursor: 'pointer' }} />
-                       <MoreHorizontal size={20} style={{ cursor: 'pointer' }} />
-                    </div>
-                 </div>
+                      <div style={{ padding: '16px', flex: 1, overflowY: 'auto' }}>
+                         <p style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 'bold', marginBottom: '12px', textTransform: 'uppercase' }}>Clientes Ativos no WhatsApp</p>
+                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {selectedAttendant.activeChats.map(chat => (
+                              <div 
+                                key={chat.id} 
+                                onClick={() => setSelectedSpyChat(chat)}
+                                style={{ 
+                                   padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0', cursor: 'pointer',
+                                   background: selectedSpyChat?.id === chat.id ? '#eff6ff' : 'white',
+                                   borderColor: selectedSpyChat?.id === chat.id ? '#2563eb' : '#e2e8f0'
+                                }}
+                              >
+                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                    <b style={{ fontSize: '13px' }}>{chat.customer}</b>
+                                    <ChevronRight size={14} color="#94a3b8" />
+                                 </div>
+                                 <p style={{ fontSize: '11px', color: '#64748b' }}>"{chat.lastMsg}"</p>
+                              </div>
+                            ))}
+                         </div>
 
-                 {/* Corpo do Chat (Bubbles) */}
-                 <div className="whatsapp-bg" style={{ flex: 1, padding: '20px 60px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {internalMessages.map(m => (
-                       <div key={m.id} style={{ 
-                          alignSelf: m.me ? 'flex-end' : 'flex-start',
-                          background: m.me ? '#d9fdd3' : 'white',
-                          padding: '6px 12px 6px 12px',
-                          borderRadius: '8px',
-                          maxWidth: '65%',
-                          position: 'relative',
-                          boxShadow: '0 1px 0.5px rgba(11,20,26,.13)',
-                          fontSize: '14.2px',
-                          display: 'flex',
-                          flexDirection: 'column'
-                       }}>
-                          <p style={{ marginBottom: '4px', wordBreak: 'break-word', color: '#111b21' }}>{m.text}</p>
-                          <div style={{ alignSelf: 'flex-end', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                             <span style={{ fontSize: '11px', color: '#667781' }}>{m.time}</span>
-                             {m.me && (
-                                <span style={{ color: m.status === 'read' ? '#53bdeb' : '#8696a0' }}>
-                                   {m.status === 'sent' ? <Check size={14}/> : <CheckCheck size={14}/>}
-                                </span>
-                             )}
-                          </div>
-                       </div>
-                    ))}
-                    
-                    {/* Exemplo de Card de Cliente Anexado */}
-                    <div style={{ alignSelf: 'flex-start', background: 'white', padding: '4px', borderRadius: '8px', maxWidth: '300px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 1px 0.5px rgba(0,0,0,0.13)' }}>
-                       <div style={{ background: '#f0f2f5', borderRadius: '4px', padding: '12px' }}>
-                          <p style={{ fontSize: '11px', color: '#2563eb', fontWeight: '800', marginBottom: '8px' }}>🏢 CARD DO CLIENTE • SERVIÇO</p>
-                          <h4 style={{ fontSize: '14px' }}>João Silva Porcelanato</h4>
-                          <p style={{ fontSize: '12px', color: '#667781', margin: '4px 0 12px' }}>"Preciso saber o status da minha rota de entrega."</p>
-                          <button style={{ width: '100%', padding: '8px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>Ver Chat WhatsApp</button>
-                       </div>
-                       <div style={{ padding: '4px 8px', display: 'flex', justifyContent: 'flex-end' }}>
-                          <span style={{ fontSize: '11px', color: '#667781' }}>10:45</span>
-                       </div>
-                    </div>
-                 </div>
-
-                 {/* Footer: Input Style WhatsApp */}
-                 <footer style={{ padding: '10px 16px', background: '#f0f2f5', display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <div style={{ display: 'flex', gap: '16px', color: '#54656f' }}>
-                       <Smile size={26} style={{ cursor: 'pointer' }} />
-                       <Paperclip size={26} style={{ cursor: 'pointer' }} onClick={() => setShowAttachModal(true)} />
-                    </div>
-                    <form onSubmit={handleSendInternal} style={{ flex: 1 }}>
-                       <input 
-                         type="text" className="input-field" placeholder="Mensagem interna..." 
-                         style={{ width: '100%', background: 'white', border: 'none', height: '42px', fontSize: '15px' }}
-                         value={inputText} onChange={e => setInputText(e.target.value)}
-                       />
-                    </form>
-                    <div style={{ color: '#54656f' }}>
-                       {inputText ? (
-                         <button type="submit" onClick={handleSendInternal} style={{ background: 'none', border: 'none', color: '#00a884', cursor: 'pointer' }}><Send size={26}/></button>
-                       ) : (
-                         <Mic size={26} style={{ cursor: 'pointer' }} />
-                       )}
-                    </div>
-                 </footer>
-
-                 {/* Modal Simulado de "Anexar Cliente" */}
-                 {showAttachModal && (
-                   <div style={{ position: 'absolute', bottom: '70px', left: '16px', background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 -2px 10px rgba(0,0,0,0.1)', zIndex: 20 }}>
-                      <h4 style={{ fontSize: '14px', marginBottom: '12px' }}>Anexar Cliente ao Chat Interno</h4>
-                      <div style={{ background: '#f1f5f9', padding: '10px', borderRadius: '8px', fontSize: '12px', cursor: 'pointer' }} onClick={() => setShowAttachModal(false)}>
-                         Selecionar João Silva...
+                         {selectedSpyChat && (
+                           <div style={{ marginTop: '24px', borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
+                              <p style={{ fontSize: '10px', color: '#10b981', fontWeight: '800', marginBottom: '12px', textAlign: 'center' }}>🛰️ MONITORAMENTO REAL-TIME: INVISÍVEL</p>
+                              <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', fontSize: '12px', marginBottom: '20px' }}>
+                                 <div style={{ marginBottom: '8px' }}><b>Cliente:</b> {selectedSpyChat.lastMsg}</div>
+                                 <div style={{ color: '#2563eb' }}><b>{selectedAttendant.name}:</b> Vou verificar agora...</div>
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                 <button className="btn-primary" style={{ background: '#f59e0b', width: '100%' }}>Sussurrar p/ Vendedor</button>
+                                 <button className="btn-primary" style={{ background: '#ef4444', width: '100%' }}>Assumir Conversa</button>
+                              </div>
+                           </div>
+                         )}
                       </div>
                    </div>
-                 )}
+                )}
 
+             </div>
+          </div>
+        )}
+
+        {/* CÓDIGO DO CHAT INTERNO (WHATSAPP STYLE) */}
+        {activeTab === 'internal' && (
+           <div className="card animate-in" style={{ flex: 1, padding: 0, display: 'grid', gridTemplateColumns: '320px 1fr' }}>
+              <div style={{ borderRight: '1px solid #e2e8f0', padding: '20px' }}>
+                 <input type="text" className="search-bar" placeholder="Buscar Equipe..." style={{ width: '100%', marginBottom: '20px' }} />
+                 {/* ... Lista de contatos ... */}
+                 <div style={{ opacity: 0.5, textAlign: 'center', marginTop: '40px' }}>
+                    <Users size={48} style={{ margin: '0 auto 12px' }} />
+                    <p>Módulo Interno Estilo WhatsApp pronto para comunicação isolada.</p>
+                 </div>
+              </div>
+              <div style={{ background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
+                 Selecione um membro da equipe para conversar
               </div>
            </div>
         )}
 
       </main>
-
-      <style>{`
-        .whatsapp-bg {
-          background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
-          background-repeat: repeat;
-          background-size: 400px;
-        }
-      `}</style>
     </div>
   );
 }
 
 // ==========================================
-// COMPONENTES DE UI AUXILIARES
+// COMPONENTES DE UI COMPACTOS
 // ==========================================
 
-function SidebarIcon({ icon, active, onClick, badge }) {
+function SidebarLink({ icon, label, active, onClick, variant, color }) {
   return (
-    <div onClick={onClick} style={{ position: 'relative', cursor: 'pointer', color: active ? '#2563eb' : '#54656f', padding: '8px', borderRadius: '12px', background: active ? '#eff6ff' : 'transparent', transition: '0.2s' }}>
-       {icon}
-       {badge > 0 && <span style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#ef4444', color: 'white', fontSize: '10px', fontWeight: 'bold', minWidth: '18px', height: '18px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white' }}>{badge}</span>}
+    <div 
+      onClick={onClick} 
+      style={{ 
+        display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', borderRadius: '10px', 
+        cursor: 'pointer', background: active ? '#eff6ff' : (variant === 'highlight' ? '#eff6ff' : 'transparent'),
+        color: active ? '#2563eb' : (color || '#64748b'),
+        fontWeight: active ? '700' : '500',
+        transition: '0.2s', border: variant === 'highlight' ? '1px dashed #2563eb' : 'none'
+      }}
+    >
+      {icon} <span style={{ fontSize: '14px' }}>{label}</span>
+      {variant === 'highlight' && <div style={{ marginLeft: 'auto', width: '8px', height: '8px', background: '#2563eb', borderRadius: '50%' }} />}
     </div>
   );
 }
 
-function ContactRow({ contact, active, onClick }) {
+function KPICard({ label, value, trend, icon, color }) {
   return (
-    <div onClick={onClick} style={{ 
-       display: 'flex', alignItems: 'center', padding: '12px 16px', cursor: 'pointer',
-       background: active ? '#f0f2f5' : 'white',
-       borderBottom: '1px solid #f1f5f9'
-    }}>
-       <div style={{ position: 'relative', marginRight: '16px' }}>
-          <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>{contact.img}</div>
-          <div style={{ position: 'absolute', bottom: '2px', right: '2px', width: '12px', height: '12px', borderRadius: '50%', background: contact.status === 'Online' ? '#1fb381' : (contact.status === 'Ausente' ? '#f59e0b' : '#94a3b8'), border: '2px solid white' }} />
+    <div className="card" style={{ borderLeft: `4px solid ${color}` }}>
+       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <div style={{ color, background: `${color}10`, padding: '8px', borderRadius: '10px' }}>{icon}</div>
+          <span style={{ fontSize: '11px', color: trend === 'Urgente' ? '#ef4444' : '#10b981', fontWeight: 'bold' }}>{trend}</span>
        </div>
-       <div style={{ flex: 1, borderBottom: active ? 'none' : '1px solid #f1f5f9', paddingBottom: '12px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-             <span style={{ fontSize: '16px', color: '#111b21' }}>{contact.name}</span>
-             <span style={{ fontSize: '12px', color: '#667781' }}>{contact.lastSeen}</span>
-          </div>
-          <p style={{ fontSize: '13px', color: '#667781' }}>Setor: {contact.sector}</p>
-       </div>
+       <p style={{ color: '#64748b', fontSize: '12px' }}>{label}</p>
+       <h3 style={{ fontSize: '22px', fontWeight: '800', marginTop: '4px' }}>{value}</h3>
     </div>
   );
 }
+
+function MessageSquare(props) { return <MessageSquareIcon {...props} />; }
+function MessageSquareIcon(props) { return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>; }
 
 function LoginScreen({ onLogin }) {
   return (
     <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
-      <div className="manager-card animate-view" style={{ width: '400px', textAlign: 'center', padding: '48px' }}>
+      <div className="card" style={{ width: '400px', textAlign: 'center', padding: '48px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
          <Zap size={48} color="#2563eb" style={{ margin: '0 auto 24px' }} />
-         <h2 style={{ marginBottom: '8px' }}>AuraChat <span style={{ color: '#2563eb' }}>Corp</span></h2>
-         <p style={{ color: '#64748b', marginBottom: '32px' }}>Rede Interna Pereira Acabamentos</p>
-         <button className="btn-action btn-primary" style={{ width: '100%', padding: '14px' }} onClick={onLogin}>Entrar no Chat da Equipe</button>
+         <h2 style={{ marginBottom: '8px' }}>Logon de Segurança</h2>
+         <button className="btn-primary" style={{ width: '100%', padding: '14px', marginTop: '24px' }} onClick={onLogin}>Acessar Padrão Pereira</button>
       </div>
     </div>
   );
