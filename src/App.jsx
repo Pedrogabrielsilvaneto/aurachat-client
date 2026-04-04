@@ -675,7 +675,21 @@ function App() {
                     </div>
                  </div>
 
-                 <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
+                 <div style={{ marginTop: 'auto', paddingTop: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <button 
+                      onClick={() => {
+                        const reason = prompt("Descreva a falta de estoque para o COMPRADOR:");
+                        if(reason) {
+                           moveContact(selectedChat.id, 'failed');
+                           axios.put(`${API_URL}/contacts`, { id: selectedChat.id, updates: { obs: `🚩 [VENDEDOR]: ${reason}`, status: 'failed' } });
+                           setContacts(contacts.map(c => c.id === selectedChat.id ? { ...c, obs: `🚩 [VENDEDOR]: ${reason}`, status: 'failed' } : c));
+                           setSelectedChat(null);
+                           alert("Falta reportada com sucesso! O pedido foi para o setor de COMPRAS.");
+                        }
+                      }}
+                      style={{ width: '100%', padding: '12px', background: '#fef2f2', color: '#ef4444', border: '1px solid #fee2e2', borderRadius: '10px', fontSize: '11px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                       <Activity size={14} /> REPORTAR FALTA (COMPRAS)
+                    </button>
                     <button onClick={() => { moveContact(selectedChat.id, 'waiting_logistics'); setSelectedChat(null); }} style={{ width: '100%', padding: '14px', background: '#10b981', color: 'white', border: 'none', borderRadius: '10px', fontSize: '12px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                        <CheckCircle size={16} /> FINALIZAR VENDA
                     </button>
