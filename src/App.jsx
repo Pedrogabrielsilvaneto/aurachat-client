@@ -85,6 +85,7 @@ function App() {
   ]);
   const fileInputRef = useRef(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [logisticsSubTab, setLogisticsSubTab] = useState('new');
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -255,64 +256,87 @@ function App() {
 
         {activeTab === 'logistics' && (
           <div className="animate-in">
-             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <div>
-                  <h1 style={{ fontSize: '24px', fontWeight: '800' }}>Fluxo de Logística (Excel View)</h1>
-                  <p style={{ color: '#64748b', fontSize: '13px' }}>Gestão de saídas e status de entrega.</p>
+                   <h1 style={{ fontSize: '24px', fontWeight: '800' }}>Fluxo de Logística (Excel View)</h1>
+                   <p style={{ color: '#64748b', fontSize: '13px' }}>Gestão fragmentada por status de entrega.</p>
                 </div>
-                <div style={{ background: '#fef2f2', color: '#ef4444', padding: '10px 16px', borderRadius: '10px', fontSize: '12px', fontWeight: '800', border: '1px solid #fee2e2' }}>
-                  PENDENCIAS: {contacts.filter(c => c.status === 'failed').length}
+                <div style={{ display: 'flex', gap: '8px', background: '#f1f5f9', padding: '6px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                   {[
+                      { key: 'new', label: 'Aguardando', color: '#64748b' },
+                      { key: 'shipped', label: 'Saiu para Entrega', color: '#3b82f6' },
+                      { key: 'delivered', label: 'Entregue', color: '#10b981' },
+                      { key: 'failed', label: 'Problema', color: '#ef4444' }
+                   ].map(st => (
+                      <button 
+                        key={st.key}
+                        onClick={() => setLogisticsSubTab(st.key)}
+                        style={{ 
+                          padding: '8px 16px', borderRadius: '8px', border: 'none', fontSize: '12px', fontWeight: '800', cursor: 'pointer',
+                          background: (logisticsSubTab || 'new') === st.key ? st.color : 'transparent',
+                          color: (logisticsSubTab || 'new') === st.key ? 'white' : '#64748b',
+                          transition: 'all 0.2s'
+                        }}>
+                        {st.label.toUpperCase()} ({contacts.filter(c => c.status === st.key).length})
+                      </button>
+                   ))}
                 </div>
              </div>
 
              <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                   <thead style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
-                      <tr>
-                        <th style={{ padding: '16px', fontSize: '12px', fontWeight: '800' }}>CLIENTE</th>
-                        <th style={{ padding: '16px', fontSize: '12px', fontWeight: '800' }}>STATUS</th>
-                        <th style={{ padding: '16px', fontSize: '12px', fontWeight: '800' }}>INTERESSES</th>
-                        <th style={{ padding: '16px', fontSize: '12px', fontWeight: '800' }}>OBSERVAÇÕES (API SYNC)</th>
-                        <th style={{ padding: '16px', fontSize: '12px', fontWeight: '800', textAlign: 'right' }}>AÇÕES</th>
+                   <thead>
+                      <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                         <th style={{ padding: '16px', fontSize: '12px', fontWeight: '800' }}>CLIENTE</th>
+                         <th style={{ padding: '16px', fontSize: '12px', fontWeight: '800' }}>STATUS</th>
+                         <th style={{ padding: '16px', fontSize: '12px', fontWeight: '800' }}>INTERESSES</th>
+                         <th style={{ padding: '16px', fontSize: '12px', fontWeight: '800' }}>OBSERVAÇÕES (API SYNC)</th>
+                         <th style={{ padding: '16px', fontSize: '12px', fontWeight: '800', textAlign: 'right' }}>AÇÕES</th>
                       </tr>
                    </thead>
                    <tbody>
-                      {contacts.map(c => (
-                         <tr key={c.id} style={{ borderBottom: '1px solid #f1f5f9', background: c.status === 'failed' ? '#fff1f2' : 'white' }}>
-                            <td style={{ padding: '16px' }}>
-                               <div style={{ fontWeight: '800', fontSize: '14px' }}>{c.name}</div>
-                               <div style={{ fontSize: '11px', color: '#64748b' }}>{c.phone}</div>
-                            </td>
-                            <td style={{ padding: '16px' }}>
-                               <select 
-                                 value={c.status} 
-                                 onChange={(e) => moveContact(c.id, e.target.value)}
-                                 style={{ 
-                                   padding: '6px', borderRadius: '6px', fontSize: '11px', fontWeight: '800',
-                                   background: c.status === 'failed' ? '#ef4444' : (c.status === 'delivered' ? '#10b981' : '#3b82f6'),
-                                   color: 'white', border: 'none'
-                                 }}>
-                                  <option value="new">AGUARDANDO</option>
-                                  <option value="shipped">SAIU PARA ENTREGA</option>
-                                  <option value="delivered">ENTREGUE</option>
-                                  <option value="failed">PROBLEMA</option>
-                               </select>
-                            </td>
-                            <td style={{ padding: '16px' }}>
-                               {c.interests?.join(', ') || 'Nenhum'}
-                            </td>
-                            <td style={{ padding: '16px' }}>
-                               <input 
-                                 defaultValue={c.obs || ""}
-                                 onBlur={(e) => axios.put(`${API_URL}/contacts`, { id: c.id, updates: { obs: e.target.value } })}
-                                 style={{ width: '100%', padding: '8px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '12px' }} 
-                               />
-                            </td>
-                            <td style={{ padding: '16px', textAlign: 'right' }}>
-                               <button onClick={() => { setSelectedChat(c); setActiveTab('whatsapp'); }} style={{ padding: '8px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px' }}><MessageCircle size={14}/></button>
-                            </td>
-                         </tr>
-                      ))}
+                      {contacts.filter(c => c.status === (logisticsSubTab || 'new')).length === 0 ? (
+                         <tr><td colSpan="5" style={{ padding: '60px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>Nenhum pedido nesta fase no momento.</td></tr>
+                      ) : (
+                         contacts.filter(c => c.status === (logisticsSubTab || 'new')).map(c => (
+                            <tr key={c.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                               <td style={{ padding: '16px' }}>
+                                  <div style={{ fontWeight: '800', fontSize: '14px' }}>{c.name}</div>
+                                  <div style={{ fontSize: '11px', color: '#64748b' }}>{c.phone}</div>
+                               </td>
+                               <td style={{ padding: '16px' }}>
+                                  <select 
+                                    value={c.status} 
+                                    onChange={(e) => moveContact(c.id, e.target.value)}
+                                    style={{ 
+                                      padding: '6px', borderRadius: '6px', fontSize: '10px', fontWeight: '900',
+                                      background: c.status === 'failed' ? '#ef4444' : (c.status === 'delivered' ? '#10b981' : '#3b82f6'),
+                                      color: 'white', border: 'none'
+                                    }}>
+                                     <option value="new">AGUARDANDO</option>
+                                     <option value="shipped">SAIU PARA ENTREGA</option>
+                                     <option value="delivered">ENTREGUE</option>
+                                     <option value="failed">PROBLEMA</option>
+                                  </select>
+                               </td>
+                               <td style={{ padding: '16px' }}>
+                                  <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                     {(c.interests || []).map((it, i) => <span key={i} style={{ background: '#eff6ff', color: '#2563eb', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: '700' }}>{it}</span>)}
+                                  </div>
+                               </td>
+                               <td style={{ padding: '16px' }}>
+                                  <input 
+                                    defaultValue={c.obs || ""}
+                                    onBlur={(e) => axios.put(`${API_URL}/contacts`, { id: c.id, updates: { obs: e.target.value } })}
+                                    style={{ width: '100%', padding: '8px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '12px' }} 
+                                  />
+                               </td>
+                               <td style={{ padding: '16px', textAlign: 'right' }}>
+                                  <button onClick={() => { setSelectedChat(c); setActiveTab('whatsapp'); }} style={{ padding: '8px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px' }}><MessageCircle size={14}/></button>
+                               </td>
+                            </tr>
+                         ))
+                      )}
                    </tbody>
                 </table>
              </div>
