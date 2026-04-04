@@ -137,16 +137,26 @@ function App() {
     }
   };
 
-  const saveProduct = () => {
+  const saveProduct = async () => {
     const newProduct = { ...formData, id: editing ? editing.id : Date.now().toString() };
-    if (editing) {
-      setProducts(products.map(p => p.id === editing.id ? newProduct : p));
-    } else {
-      setProducts([newProduct, ...products]);
+    try {
+      // SALVAR NA VERCEL (KV)
+      await axios.post(`${API_URL}/products`, newProduct);
+      
+      if (editing) {
+        setProducts(products.map(p => p.id === editing.id ? newProduct : p));
+      } else {
+        setProducts([newProduct, ...products]);
+      }
+      setShowModal(false);
+      setEditing(null);
+      setFormData({ name: '', code: '', media: '', type: 'image', desc: '', videoUrl: '' });
+      console.log("📦 Produto persistido na Vercel KV");
+    } catch (err) {
+      console.error("Erro ao persistir na Vercel:", err);
+      // Fallback local se API offline
+      setShowModal(false);
     }
-    setShowModal(false);
-    setEditing(null);
-    setFormData({ name: '', code: '', media: '', type: 'image', desc: '', videoUrl: '' });
   };
 
   const startEdit = (p) => {
@@ -159,8 +169,15 @@ function App() {
     if (window.confirm("Excluir este produto?")) setProducts(products.filter(p => p.id !== id));
   };
 
-  const moveContact = (id, newStatus) => {
-    setContacts(contacts.map(c => c.id === id ? { ...c, status: newStatus } : c));
+  const moveContact = async (id, newStatus) => {
+    try {
+      // ATUALIZAR NA VERCEL (KV)
+      await axios.put(`${API_URL}/contacts`, { id, updates: { status: newStatus } });
+      setContacts(contacts.map(c => c.id === id ? { ...c, status: newStatus } : c));
+      console.log("🔄 Logística atualizada na Vercel KV");
+    } catch (err) {
+      console.error("Erro ao mover lead na nuvem:", err);
+    }
   };
 
   return (

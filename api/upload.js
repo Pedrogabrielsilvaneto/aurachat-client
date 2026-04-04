@@ -1,5 +1,4 @@
-// Rota para Geração de Token de Upload do Vercel Blob (Direto via Cliente)
-// Isso contorna o limite de 4.5MB das funções serverless da Vercel
+// v1.0.1 - Vercel Blob Token Connection Active
 import { handleUpload } from '@vercel/blob/client';
 
 export default async function handler(req, res) {
