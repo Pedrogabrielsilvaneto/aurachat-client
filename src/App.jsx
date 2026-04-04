@@ -59,6 +59,14 @@ function App() {
   const [editing, setEditing] = useState(null);
   const [viewing, setViewing] = useState(null);
   const [formData, setFormData] = useState({ name: '', code: '', media: '', type: 'image', desc: '', videoUrl: '' });
+  const [selectedChat, setSelectedChat] = useState(null);
+  const [msgInput, setMsgInput] = useState('');
+  const [messages, setMessages] = useState([
+    { id: 1, contactId: 1, from: 'client', text: 'Olá, gostaria de saber o preço do porcelanato polido 60x120', time: '10:30' },
+    { id: 2, contactId: 1, from: 'bot', text: 'Olá! A Sônia aqui. O Porcelanato Polido 60x120 está R$ 89,90/m². Gostaria de ver o catálogo técnico?', time: '10:30', bot: true },
+    { id: 3, contactId: 1, from: 'client', text: 'Sim, por favor', time: '10:31' },
+    { id: 4, contactId: 1, from: 'bot', text: 'Aqui está: [Link do Catálogo]. Temos também em estoque para entrega imediata!', time: '10:31', bot: true },
+  ]);
   const fileInputRef = useRef(null);
   const [logisticsFilter, setLogisticsFilter] = useState('all');
 
@@ -412,29 +420,142 @@ function App() {
 
         {activeTab === 'whatsapp' && (
           <div className="animate-in" style={{ height: 'calc(100vh - 120px)', background: 'white', borderRadius: '20px', border: '1px solid #e2e8f0', display: 'flex', overflow: 'hidden' }}>
+            {/* LISTA DE CONTATOS (CHAT) */}
             <div style={{ width: '350px', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
               <div style={{ padding: '24px', borderBottom: '1px solid #e2e8f0' }}>
-                <h2 style={{ fontSize: '18px', fontWeight: '800' }}>Conversas</h2>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h2 style={{ fontSize: '20px', fontWeight: '800' }}>Conversas</h2>
+                  <div style={{ background: '#f8fafc', padding: '4px 8px', borderRadius: '6px', fontSize: '10px', color: '#64748b', fontWeight: '800' }}>12 ONLINE</div>
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                  <input placeholder="Buscar cliente..." style={{ width: '100%', padding: '10px 10px 10px 35px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc' }} />
+                </div>
               </div>
+              
               <div style={{ flex: 1, overflowY: 'auto' }}>
                 {contacts.map(c => (
-                  <div key={c.id} style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer', transition: 'background 0.2s' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div key={c.id} onClick={() => setSelectedChat(c)} style={{ padding: '20px', borderBottom: '1px solid #f8fafc', cursor: 'pointer', background: selectedChat?.id === c.id ? '#f1f5f9' : 'transparent', borderLeft: selectedChat?.id === c.id ? '4px solid #2563eb' : '4px solid transparent' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                       <b style={{ fontSize: '14px' }}>{c.name}</b>
                       <span style={{ fontSize: '11px', color: '#94a3b8' }}>{c.time}</span>
                     </div>
-                    <p style={{ fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '4px' }}>{c.msg}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                       <span style={{ fontSize: '11px', background: c.status === 'active' ? '#fdf2f8' : '#eff6ff', color: c.status === 'active' ? '#db2777' : '#2563eb', padding: '0px 6px', borderRadius: '4px', fontWeight: '800' }}>
+                          {c.status.toUpperCase()}
+                       </span>
+                       <p style={{ fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.msg || "Última mensagem enviada..."}</p>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', color: '#94a3b8' }}>
-              <div style={{ width: '60px', height: '60px', borderRadius: '30px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-                <MessageCircle size={32} color="#2563eb" />
+
+            {/* JANELA DE CHAT */}
+            {selectedChat ? (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#f8fafc' }}>
+                {/* HEAD DO CHAT */}
+                <div style={{ padding: '20px 24px', background: 'white', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ width: '40px', height: '40px', background: '#2563eb', color: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800' }}>
+                      {selectedChat.name[0]}
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: '15px', fontWeight: '800' }}>{selectedChat.name}</h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#10b981', fontWeight: '700' }}>
+                         <div style={{ width: '6px', height: '6px', background: '#10b981', borderRadius: '3px' }} /> Ativo via WhatsApp
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', background: '#fef3c7', padding: '8px 12px', borderRadius: '10px', border: '1px solid #f59e0b' }}>
+                    <Zap size={14} color="#f59e0b" fill="#f59e0b" />
+                    <span style={{ fontSize: '11px', fontWeight: '800', color: '#92400e' }}>SÔNIA: MODO ASSISTENTE ATIVO</span>
+                  </div>
+                </div>
+
+                {/* FEED DE MENSAGENS */}
+                <div style={{ flex: 1, padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <center style={{ marginBottom: '20px' }}>
+                     <span style={{ fontSize: '11px', color: '#94a3b8', background: '#fff', padding: '4px 12px', borderRadius: '10px', border: '1px solid #e2e8f0', fontWeight: '600' }}>SÁBADO, 14:32</span>
+                  </center>
+
+                  {messages.map(m => (
+                    <div key={m.id} style={{ display: 'flex', alignSelf: m.from === 'client' ? 'flex-start' : 'flex-end', maxWidth: '70%', flexDirection: 'column' }}>
+                      <div style={{ 
+                        background: m.from === 'client' ? 'white' : (m.bot ? '#eff6ff' : '#2563eb'), 
+                        color: m.from === 'client' ? '#0f172a' : (m.bot ? '#1e40af' : 'white'), 
+                        padding: '12px 16px', 
+                        borderRadius: m.from === 'client' ? '4px 16px 16px 16px' : '16px 16px 4px 16px',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        position: 'relative'
+                      }}>
+                        {m.text}
+                        {m.bot && <div style={{ fontSize: '9px', fontWeight: '800', opacity: 0.6, marginTop: '4px', textTransform: 'uppercase' }}>Respondido pela Sônia IA</div>}
+                      </div>
+                      <span style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px', alignSelf: m.from === 'client' ? 'flex-start' : 'flex-end' }}>{m.time}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* INPUT DO CHAT */}
+                <div style={{ padding: '24px', background: 'white', borderTop: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <div onClick={() => setActiveTab('products')} style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b' }}>
+                       <Plus size={20} />
+                    </div>
+                    <input 
+                      value={msgInput}
+                      onChange={e => setMsgInput(e.target.value)}
+                      placeholder="Digite sua mensagem aqui..." 
+                      style={{ flex: 1, padding: '14px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '14px' }} 
+                      onKeyPress={e => e.key === 'Enter' && setMessages([...messages, { id: Date.now(), from: 'human', text: msgInput, time: '14:45' }])}
+                    />
+                    <div onClick={() => { if(msgInput) { setMessages([...messages, { id: Date.now(), from: 'human', text: msgInput, time: '14:45' }]); setMsgInput(''); } }} style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}>
+                       <MessageCircle size={20} />
+                    </div>
+                  </div>
+                </div>
               </div>
-              <h2 style={{ color: '#0f172a', fontWeight: '800', fontSize: '20px' }}>Pereira Acabamentos OmniChannel</h2>
-              <p style={{ marginTop: '8px' }}>Selecione um cliente para assumir o atendimento humano.</p>
-            </div>
+            ) : (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', color: '#94a3b8' }}>
+                <div style={{ width: '80px', height: '80px', borderRadius: '40px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px' }}>
+                  <MessageSquareIcon size={40} color="#2563eb" />
+                </div>
+                <h2 style={{ color: '#0f172a', fontWeight: '800', fontSize: '24px' }}>Pereira Acabamentos OmniChannel</h2>
+                <p style={{ marginTop: '10px' }}>Selecione um cliente para assumir o atendimento humano.</p>
+                <div style={{ marginTop: '30px', display: 'flex', gap: '10px' }}>
+                   <div style={{ background: 'white', padding: '12px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '12px', fontWeight: '700', color: '#64748b' }}>IA Ativa na Fila: 4</div>
+                   <div style={{ background: 'white', padding: '12px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '12px', fontWeight: '700', color: '#64748b' }}>Média de Resposta: 4s</div>
+                </div>
+              </div>
+            )}
+            
+            {/* INFO DO CLIENTE (DIREITA) */}
+            {selectedChat && (
+              <div className="animate-in" style={{ width: '300px', borderLeft: '1px solid #e2e8f0', background: 'white', padding: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                 <div style={{ width: '80px', height: '80px', background: '#2563eb', color: 'white', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: '800', marginBottom: '20px' }}>
+                    {selectedChat.name[0]}
+                 </div>
+                 <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '4px' }}>{selectedChat.name}</h3>
+                 <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '40px' }}>{selectedChat.phone}</p>
+                 
+                 <div style={{ width: '100%', marginBottom: '30px' }}>
+                    <h4 style={{ fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '1px' }}>Produtos de Interesse</h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                       <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', fontSize: '12px', color: '#475569', fontWeight: '600', border: '1px solid #f1f5f9' }}>Porcelanato Polido 60x120</div>
+                       <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', fontSize: '12px', color: '#475569', fontWeight: '600', border: '1px solid #f1f5f9' }}>Rodapé Poliestireno</div>
+                    </div>
+                 </div>
+
+                 <div style={{ marginTop: 'auto', width: '100%' }}>
+                    <button onClick={() => moveContact(selectedChat.id, 'completed')} style={{ width: '100%', padding: '12px', background: '#eff6ff', color: '#2563eb', border: 'none', borderRadius: '10px', fontSize: '12px', fontWeight: '800', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.target.style.background='#dbeafe'} onMouseLeave={e => e.target.style.background='#eff6ff'}>FINALIZAR ATENDIMENTO</button>
+                    <button style={{ width: '100%', padding: '12px', background: '#fff', color: '#ef4444', border: '1px solid #fee2e2', borderRadius: '10px', fontSize: '12px', fontWeight: '800', cursor: 'pointer', marginTop: '10px' }}>BLOQUEAR CONTATO</button>
+                 </div>
+              </div>
+            )}
           </div>
         )}
 
