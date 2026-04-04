@@ -87,6 +87,38 @@ function App() {
   const [isUploading, setIsUploading] = useState(false);
   const [logisticsSubTab, setLogisticsSubTab] = useState('new');
   const [gestionSubTab, setGestionSubTab] = useState('users');
+  const [employees, setEmployees] = useState([
+    { id: '1', name: 'Marcos Neto', user: 'marcos.diretoria', pass: '********', role: 'DIRETOR' },
+    { id: '2', name: 'Sônia IA', user: 'sonia.bot', pass: 'TOKEN_JWT', role: 'VENDEDORA' }
+  ]);
+  const [showEmployeeModal, setShowEmployeeModal] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState(null);
+  const [employeeFormData, setEmployeeFormData] = useState({ name: '', user: '', pass: '', role: 'VENDAS' });
+  
+  const [showClientModal, setShowClientModal] = useState(false);
+  const [editingClient, setEditingClient] = useState(null);
+
+  const saveEmployee = () => {
+    if (editingEmployee) {
+      setEmployees(employees.map(e => e.id === editingEmployee.id ? { ...employeeFormData, id: e.id } : e));
+    } else {
+      setEmployees([...employees, { ...employeeFormData, id: Date.now().toString() }]);
+    }
+    setShowEmployeeModal(false);
+    setEditingEmployee(null);
+    setEmployeeFormData({ name: '', user: '', pass: '', role: 'VENDAS' });
+  };
+
+  const removeEmployee = (id) => { if(window.confirm("Excluir funcionário?")) setEmployees(employees.filter(e => e.id !== id)); };
+
+  const startEditEmployee = (e) => { setEditingEmployee(e); setEmployeeFormData(e); setShowEmployeeModal(true); };
+
+  const removeClient = async (id) => { 
+    if(window.confirm("Excluir cliente permanentemente?")) {
+       setContacts(contacts.filter(c => c.id !== id));
+       // axios.delete(...) if API supports it
+    }
+  };
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -441,19 +473,25 @@ function App() {
 
         {activeTab === 'gestion' && (
           <div className="animate-in">
-             <div style={{ display: 'flex', gap: '20px', marginBottom: '25px' }}>
-                <button 
-                  onClick={() => setGestionSubTab('users')} 
-                  style={{ 
-                    padding: '10px 20px', borderRadius: '10px', border: 'none', background: (gestionSubTab || 'users') === 'users' ? '#2563eb' : '#f1f5f9', color: (gestionSubTab || 'users') === 'users' ? 'white' : '#64748b', fontSize: '13px', fontWeight: '800', cursor: 'pointer' 
-                  }}>CADASTRO FUNCIONÁRIO</button>
-                <button 
-                  onClick={() => setGestionSubTab('clients')} 
-                  style={{ 
-                    padding: '10px 20px', borderRadius: '10px', border: 'none', background: (gestionSubTab || 'users') === 'clients' ? '#2563eb' : '#f1f5f9', color: (gestionSubTab || 'users') === 'clients' ? 'white' : '#64748b', fontSize: '13px', fontWeight: '800', cursor: 'pointer' 
-                  }}>CADASTRO DE CLIENTES</button>
+             <div style={{ display: 'flex', gap: '20px', marginBottom: '25px', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button 
+                    onClick={() => setGestionSubTab('users')} 
+                    style={{ 
+                      padding: '10px 20px', borderRadius: '10px', border: 'none', background: (gestionSubTab || 'users') === 'users' ? '#2563eb' : '#f1f5f9', color: (gestionSubTab || 'users') === 'users' ? 'white' : '#64748b', fontSize: '13px', fontWeight: '800', cursor: 'pointer' 
+                    }}>CADASTRO FUNCIONÁRIO</button>
+                  <button 
+                    onClick={() => setGestionSubTab('clients')} 
+                    style={{ 
+                      padding: '10px 20px', borderRadius: '10px', border: 'none', background: (gestionSubTab || 'users') === 'clients' ? '#2563eb' : '#f1f5f9', color: (gestionSubTab || 'users') === 'clients' ? 'white' : '#64748b', fontSize: '13px', fontWeight: '800', cursor: 'pointer' 
+                    }}>CADASTRO DE CLIENTES</button>
+                </div>
+                {gestionSubTab === 'users' && (
+                  <button className="btn-primary" onClick={() => { setEditingEmployee(null); setEmployeeFormData({name:'',user:'',pass:'',role:'VENDAS'}); setShowEmployeeModal(true); }}><Plus size={16} /> NOVO FUNCIONÁRIO</button>
+                )}
              </div>
 
+             {/* TABELA DE FUNCIONÁRIOS */}
              {gestionSubTab === 'users' && (
                <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
@@ -462,22 +500,23 @@ function App() {
                            <th style={{ padding: '16px', fontSize: '11px', fontWeight: '800' }}>NOME</th>
                            <th style={{ padding: '16px', fontSize: '11px', fontWeight: '800' }}>USUÁRIO</th>
                            <th style={{ padding: '16px', fontSize: '11px', fontWeight: '800' }}>PERMISSÃO</th>
-                           <th style={{ padding: '16px', fontSize: '11px', fontWeight: '800' }}>SENHA (CRYPT)</th>
+                           <th style={{ padding: '16px', fontSize: '11px', fontWeight: '800', textAlign: 'right' }}>AÇÕES</th>
                         </tr>
                      </thead>
                      <tbody>
-                        {[
-                          { name: 'Marcos Neto', user: 'marcos.diretoria', pass: '********', role: 'DIRETOR' },
-                          { name: 'Sônia IA', user: 'sonia.bot', pass: 'TOKEN_JWT', role: 'VENDEDORA' },
-                          { name: 'Expedição 01', user: 'logistica.estoque', pass: '********', role: 'LOGÍSTICA' }
-                        ].map((u, i) => (
-                           <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        {employees.map((u) => (
+                           <tr key={u.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                               <td style={{ padding: '16px', fontWeight: '800', fontSize: '13px' }}>{u.name}</td>
                               <td style={{ padding: '16px', color: '#64748b' }}>{u.user}</td>
                               <td style={{ padding: '16px' }}>
                                  <span style={{ padding: '4px 8px', borderRadius: '6px', background: '#eff6ff', color: '#2563eb', fontSize: '10px', fontWeight: '800' }}>{u.role}</span>
                               </td>
-                              <td style={{ padding: '16px' }}><code>{u.pass}</code></td>
+                              <td style={{ padding: '16px', textAlign: 'right' }}>
+                                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                    <button onClick={() => startEditEmployee(u)} style={{ padding: '6px', border: '1px solid #e2e8f0', background: 'white', borderRadius: '6px' }}><Edit3 size={14} /></button>
+                                    <button onClick={() => removeEmployee(u.id)} style={{ padding: '6px', background: '#fef2f2', border: '1px solid #fee2e2', color: '#ef4444', borderRadius: '6px' }}><Trash2 size={14} /></button>
+                                 </div>
+                              </td>
                            </tr>
                         ))}
                      </tbody>
@@ -485,6 +524,7 @@ function App() {
                </div>
              )}
 
+             {/* TABELA DE CLIENTES */}
              {gestionSubTab === 'clients' && (
                <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
                   <div style={{ padding: '16px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between' }}>
@@ -497,7 +537,7 @@ function App() {
                            <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800' }}>CLIENTE</th>
                            <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800' }}>TELEFONE</th>
                            <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800' }}>PERFIL</th>
-                           <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800' }}>TAGS / INTERESSES</th>
+                           <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800', textAlign: 'right' }}>AÇÕES</th>
                         </tr>
                      </thead>
                      <tbody>
@@ -508,9 +548,10 @@ function App() {
                               <td style={{ padding: '12px 16px' }}>
                                  <span style={{ color: '#2563eb', fontSize: '11px', fontWeight: '700' }}>{c.role?.toUpperCase() || 'MKT LEAD'}</span>
                               </td>
-                              <td style={{ padding: '12px 16px' }}>
-                                 <div style={{ display: 'flex', gap: '4px' }}>
-                                    {(c.interests || []).map((it, i) => <span key={i} style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', fontSize: '10px' }}>{it}</span>)}
+                              <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                    <button onClick={() => { setEditingClient(c); setShowClientModal(true); }} style={{ padding: '6px', border: '1px solid #e2e8f0', background: 'white', borderRadius: '6px' }}><Edit3 size={14} /></button>
+                                    <button onClick={() => removeClient(c.id)} style={{ padding: '6px', background: '#fef2f2', border: '1px solid #fee2e2', color: '#ef4444', borderRadius: '6px' }}><Trash2 size={14} /></button>
                                  </div>
                               </td>
                            </tr>
@@ -742,6 +783,46 @@ function App() {
              <h2 style={{ marginTop: '15px' }}>{viewing.name}</h2>
              <p>{viewing.desc}</p>
              <button onClick={() => setViewing(null)} style={{ marginTop: '20px' }}>Fechar</button>
+          </div>
+        </div>
+      )}
+      {showEmployeeModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200 }}>
+          <div className="card animate-in" style={{ width: '400px', padding: '32px' }}>
+            <h2 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '20px' }}>{editingEmployee ? 'Editar Funcionário' : 'Novo Funcionário'}</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              <input value={employeeFormData.name} onChange={e => setEmployeeFormData({...employeeFormData, name: e.target.value})} placeholder="Nome Completo" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }} />
+              <input value={employeeFormData.user} onChange={e => setEmployeeFormData({...employeeFormData, user: e.target.value})} placeholder="Usuário / Login" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }} />
+              <input value={employeeFormData.pass} onChange={e => setEmployeeFormData({...employeeFormData, pass: e.target.value})} type="password" placeholder="Senha" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }} />
+              <select value={employeeFormData.role} onChange={e => setEmployeeFormData({...employeeFormData, role: e.target.value})} style={{ padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                 <option value="VENDAS">VENDAS</option>
+                 <option value="LOGÍSTICA">LOGÍSTICA</option>
+                 <option value="COMPRAS">COMPRAS</option>
+                 <option value="DIRETORIA">DIRETORIA</option>
+              </select>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                <button onClick={saveEmployee} style={{ flex: 1, padding: '12px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '800' }}>{editingEmployee ? 'Salvar' : 'Criar'}</button>
+                <button onClick={() => setShowEmployeeModal(false)} style={{ flex: 1, padding: '12px', background: '#f1f5f9', border: 'none', borderRadius: '10px' }}>Cancelar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showClientModal && editingClient && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200 }}>
+          <div className="card animate-in" style={{ width: '400px', padding: '32px' }}>
+            <h2 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '20px' }}>Editar Perfil Cliente</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              <input defaultValue={editingClient.name} onBlur={e => setContacts(contacts.map(c => c.id === editingClient.id ? {...c, name: e.target.value} : c))} placeholder="Nome" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }} />
+              <input defaultValue={editingClient.phone} onBlur={e => setContacts(contacts.map(c => c.id === editingClient.id ? {...c, phone: e.target.value} : c))} placeholder="WhatsApp" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }} />
+              <select defaultValue={editingClient.role} onChange={e => setContacts(contacts.map(c => c.id === editingClient.id ? {...c, role: e.target.value} : c))} style={{ padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                 <option value="clt">CLT (Normal)</option>
+                 <option value="terceiros">TERCEIROS / PARCERIA</option>
+                 <option value="gestao">VIP / DIRETORIA</option>
+              </select>
+              <button onClick={() => setShowClientModal(false)} style={{ background: '#2563eb', color: 'white', padding: '12px', borderRadius: '10px', border: 'none', fontWeight: '800' }}>Finalizar Edição</button>
+            </div>
           </div>
         </div>
       )}
