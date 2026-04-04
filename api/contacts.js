@@ -55,6 +55,13 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true });
     }
 
+    if (req.method === 'DELETE') {
+       const { id } = req.query;
+       const updated = currentContacts.filter(c => c.id !== id);
+       await kv.set('aura_contacts', updated);
+       return res.status(200).json({ success: true });
+    }
+
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
     return res.status(500).json({ error: error.message });

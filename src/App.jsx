@@ -87,10 +87,7 @@ function App() {
   const [isUploading, setIsUploading] = useState(false);
   const [logisticsSubTab, setLogisticsSubTab] = useState('new');
   const [gestionSubTab, setGestionSubTab] = useState('users');
-  const [employees, setEmployees] = useState([
-    { id: '1', name: 'Marcos Neto', user: 'marcos.diretoria', pass: '********', role: 'DIRETOR' },
-    { id: '2', name: 'Sônia IA', user: 'sonia.bot', pass: 'TOKEN_JWT', role: 'VENDEDORA' }
-  ]);
+  const [employees, setEmployees] = useState([]);
   const [showEmployeeModal, setShowEmployeeModal] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [employeeFormData, setEmployeeFormData] = useState({ name: '', user: '', pass: '', role: 'VENDAS' });
@@ -98,39 +95,47 @@ function App() {
   const [showClientModal, setShowClientModal] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
 
-  const saveEmployee = () => {
+  const saveEmployee = async () => {
     if (editingEmployee) {
-      setEmployees(employees.map(e => e.id === editingEmployee.id ? { ...employeeFormData, id: e.id } : e));
+       await axios.put(`${API_URL}/employees`, { ...employeeFormData, id: editingEmployee.id });
+       setEmployees(employees.map(e => e.id === editingEmployee.id ? { ...employeeFormData, id: e.id } : e));
     } else {
-      setEmployees([...employees, { ...employeeFormData, id: Date.now().toString() }]);
+       const res = await axios.post(`${API_URL}/employees`, employeeFormData);
+       setEmployees([...employees, { ...employeeFormData, id: res.data.employee.id }]);
     }
     setShowEmployeeModal(false);
     setEditingEmployee(null);
-    setEmployeeFormData({ name: '', user: '', pass: '', role: 'VENDAS' });
   };
 
-  const removeEmployee = (id) => { if(window.confirm("Excluir funcionário?")) setEmployees(employees.filter(e => e.id !== id)); };
+  const removeEmployee = async (id) => { 
+    if(window.confirm("Excluir funcionário?")) {
+       await axios.delete(`${API_URL}/employees?id=${id}`);
+       setEmployees(employees.filter(e => e.id !== id));
+    }
+  };
 
   const startEditEmployee = (e) => { setEditingEmployee(e); setEmployeeFormData(e); setShowEmployeeModal(true); };
 
   const removeClient = async (id) => { 
     if(window.confirm("Excluir cliente permanentemente?")) {
+       await axios.delete(`${API_URL}/contacts?id=${id}`);
        setContacts(contacts.filter(c => c.id !== id));
-       // axios.delete(...) if API supports it
     }
   };
 
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const [cRes, pRes] = await Promise.all([
+        const [cRes, pRes, eRes] = await Promise.all([
           axios.get(`${API_URL}/contacts`),
-          axios.get(`${API_URL}/products`)
+          axios.get(`${API_URL}/products`),
+          axios.get(`${API_URL}/employees`)
         ]);
         if (cRes.data.length > 0) setContacts(cRes.data);
         if (pRes.data.length > 0) setProducts(pRes.data);
+        if (eRes.data.length > 0) setEmployees(eRes.data);
       } catch (err) {
-        console.warn("API Offline / Local Mode Ativo:", err.message);
+        console.warn("KV Sync Error:", err.message);
       }
     };
     fetchData();
