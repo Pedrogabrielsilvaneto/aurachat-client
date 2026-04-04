@@ -9,7 +9,7 @@ import {
   PieChart, Pie, Cell, BarChart, Bar, Legend
 } from 'recharts';
 
-// import axios from 'axios'; // Comentado conforme pedido para focar 100% na Vercel
+import axios from 'axios'; 
 
 const DASHBOARD_CHART_DATA = [
   { name: 'Seg', leads: 24, conversion: 18 },
@@ -27,6 +27,8 @@ const SOURCE_DATA = [
   { name: 'Direto/WA', value: 15, color: '#10b981' },
   { name: 'Indicação', value: 10, color: '#f59e0b' },
 ];
+
+const API_URL = '/api'; // Rota nativa unificada da Vercel para Métricas e Painel
 
 // DADOS INICIAIS CASO O LOCALSTORAGE ESTEJA VAZIO
 const DEFAULT_PRODUCTS = [
@@ -59,15 +61,27 @@ function App() {
   const fileInputRef = useRef(null);
   const [logisticsFilter, setLogisticsFilter] = useState('all');
 
-  // PERSISTÊNCIA 100% VERCEL (LOCALSTORAGE)
+  // CARREGAR DADOS DA VERCEL API E SINCRONIZAR COM LOCALSTORAGE
   React.useEffect(() => {
-    const savedProducts = localStorage.getItem('aura_products');
-    const savedCampaigns = localStorage.getItem('aura_campaigns');
-    const savedContacts = localStorage.getItem('aura_contacts');
-
-    if (savedProducts) setProducts(JSON.parse(savedProducts));
-    if (savedCampaigns) setCampaigns(JSON.parse(savedCampaigns));
-    if (savedContacts) setContacts(JSON.parse(savedContacts));
+    const fetchData = async () => {
+      try {
+        const [cRes, pRes] = await Promise.all([
+          axios.get(`${API_URL}/contacts`),
+          axios.get(`${API_URL}/products`)
+        ]);
+        
+        // Se a API retornar dados, usa eles; senão, usa os locais
+        if (cRes.data.length > 0) setContacts(cRes.data);
+        if (pRes.data.length > 0) setProducts(pRes.data);
+      } catch (err) {
+        console.warn("API Offline / Local Mode Ativo:", err.message);
+        const savedProducts = localStorage.getItem('aura_products');
+        const savedContacts = localStorage.getItem('aura_contacts');
+        if (savedProducts) setProducts(JSON.parse(savedProducts));
+        if (savedContacts) setContacts(JSON.parse(savedContacts));
+      }
+    };
+    fetchData();
   }, []);
 
   // SALVAR NO LOCALSTORAGE SEMPRE QUE ALGO MUDAR
