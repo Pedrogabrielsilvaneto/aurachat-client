@@ -795,16 +795,26 @@ function App() {
                            <th style={{ padding: '16px', fontSize: '11px', fontWeight: '800', textAlign: 'right' }}>AÇÕES</th>
                         </tr>
                      </thead>
-                    <tbody>
-                       {campaigns.map(cp => (
-                         <tr key={cp.id}>
-                           <td style={{ padding: '12px 0' }}>{cp.name}</td>
-                           <td><code style={{ fontSize: '11px' }}>{cp.link}</code></td>
-                           <td>{cp.status}</td>
-                           <td>{cp.leads}</td>
-                         </tr>
-                       ))}
-                    </tbody>
+                     <tbody>
+                        {campaigns.map(cp => (
+                          <tr key={cp.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            <td style={{ padding: '16px', fontWeight: '800', fontSize: '13px' }}>{cp.name}</td>
+                            <td style={{ padding: '16px' }}><code style={{ fontSize: '11px', background: '#f1f5f9', padding: '4px 8px', borderRadius: '4px' }}>{cp.link}</code></td>
+                            <td style={{ padding: '16px' }}>{cp.platform}</td>
+                            <td style={{ padding: '16px' }}>
+                              <span style={{ padding: '4px 10px', borderRadius: '6px', background: cp.status === 'Ativa' || cp.status === 'active' ? '#f0fdf4' : '#fef2f2', color: cp.status === 'Ativa' || cp.status === 'active' ? '#16a34a' : '#ef4444', fontSize: '10px', fontWeight: '800' }}>
+                                {cp.status === 'Ativa' || cp.status === 'active' ? 'ATIVA' : 'PAUSADA'}
+                              </span>
+                            </td>
+                            <td style={{ padding: '16px', textAlign: 'right' }}>
+                              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                <button onClick={() => { setEditingCampaign(cp); setCampaignFormData({ name: cp.name, link: cp.link, platform: cp.platform, status: cp.status }); setShowCampaignModal(true); }} style={{ padding: '6px', border: '1px solid #e2e8f0', background: 'white', borderRadius: '6px', cursor: 'pointer' }}><Edit3 size={14} /></button>
+                                <button onClick={() => removeCampaign(cp.id)} style={{ padding: '6px', background: '#fef2f2', border: '1px solid #fee2e2', color: '#ef4444', borderRadius: '6px', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                     </tbody>
                  </table>
              </div>
           </div>
