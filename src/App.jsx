@@ -1,3 +1,4 @@
+import React, { useState, useRef } from 'react';
 import { 
   ShoppingCart, Truck, MessageCircle, Search, Plus, Zap, LogOut, LayoutDashboard,
   ChevronDown, MessageSquare as MessageSquareIcon, Edit3, Save, X, Trash2, Maximize2, Upload, CheckCircle,
