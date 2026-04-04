@@ -28,7 +28,7 @@ const SOURCE_DATA = [
   { name: 'Indicação', value: 10, color: '#f59e0b' },
 ];
 
-const API_URL = 'http://localhost:3000'; // Ajuste conforme porta real do backend
+const API_URL = 'http://localhost:3001'; // Ajuste conforme porta real do backend
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
