@@ -67,7 +67,6 @@ function SidebarLink({ icon, label, active, onClick, color }) {
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [products, setProducts] = useState(DEFAULT_PRODUCTS);
-  const [campaigns, setCampaigns] = useState(DEFAULT_CAMPAIGNS);
   const [contacts, setContacts] = useState(DEFAULT_CONTACTS);
   const [stats, setStats] = useState({ total: 128, inService: 42, conversion: '24%', responseTime: '1.2s' });
   
@@ -96,6 +95,11 @@ function App() {
   const [editingClient, setEditingClient] = useState(null);
   const [viewingClientFull, setViewingClientFull] = useState(null);
 
+  const [campaigns, setCampaigns] = useState([]);
+  const [showCampaignModal, setShowCampaignModal] = useState(false);
+  const [editingCampaign, setEditingCampaign] = useState(null);
+  const [campaignFormData, setCampaignFormData] = useState({ name: '', link: '', platform: 'Instagram', status: 'Ativa' });
+
   const saveEmployee = async () => {
     if (editingEmployee) {
        await axios.put(`${API_URL}/employees`, { ...employeeFormData, id: editingEmployee.id });
@@ -106,6 +110,25 @@ function App() {
     }
     setShowEmployeeModal(false);
     setEditingEmployee(null);
+  };
+
+  const saveCampaign = async () => {
+    if (editingCampaign) {
+       await axios.put(`${API_URL}/campaigns`, { ...campaignFormData, id: editingCampaign.id });
+       setCampaigns(campaigns.map(c => c.id === editingCampaign.id ? { ...campaignFormData, id: c.id } : c));
+    } else {
+       const res = await axios.post(`${API_URL}/campaigns`, campaignFormData);
+       setCampaigns([...campaigns, { ...campaignFormData, id: res.data.campaign.id, leads: 0 }]);
+    }
+    setShowCampaignModal(false);
+    setEditingCampaign(null);
+  };
+
+  const removeCampaign = async (id) => { 
+    if(window.confirm("Excluir campanha?")) {
+       await axios.delete(`${API_URL}/campaigns?id=${id}`);
+       setCampaigns(campaigns.filter(c => c.id !== id));
+    }
   };
 
   const removeEmployee = async (id) => { 
@@ -127,14 +150,16 @@ function App() {
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const [cRes, pRes, eRes] = await Promise.all([
+        const [cRes, pRes, eRes, cpRes] = await Promise.all([
           axios.get(`${API_URL}/contacts`),
           axios.get(`${API_URL}/products`),
-          axios.get(`${API_URL}/employees`)
+          axios.get(`${API_URL}/employees`),
+          axios.get(`${API_URL}/campaigns`)
         ]);
         if (cRes.data.length > 0) setContacts(cRes.data);
         if (pRes.data.length > 0) setProducts(pRes.data);
         if (eRes.data.length > 0) setEmployees(eRes.data);
+        if (cpRes.data.length > 0) setCampaigns(cpRes.data);
       } catch (err) {
         console.warn("KV Sync Error:", err.message);
       }
@@ -750,10 +775,26 @@ function App() {
 
         {activeTab === 'campaigns' && (
           <div className="animate-in">
-             <h1>Gestão de Campanhas</h1>
-             <div className="card" style={{ marginTop: '20px' }}>
+             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+                <div>
+                  <h1 style={{ fontSize: '24px', fontWeight: '800' }}>Gestão de Campanhas</h1>
+                  <p style={{ color: '#64748b', fontSize: '13px' }}>Monitoramento de ROI e links de tráfego pago (Ads).</p>
+                </div>
+                <button className="btn-primary" onClick={() => { setEditingCampaign(null); setCampaignFormData({name:'',link:'',platform:'Instagram',status:'Ativa'}); setShowCampaignModal(true); }}>
+                   <Plus size={16} /> NOVA CAMPANHA
+                </button>
+             </div>
+             <div className="card" style={{ padding: 0, overflow: 'hidden', marginTop: '20px' }}>
                  <table style={{ width: '100%', textAlign: 'left' }}>
-                    <thead><tr style={{ color: '#64748b' }}><th>NOME</th><th>LINK</th><th>STATUS</th><th>LEADS</th></tr></thead>
+                     <thead style={{ background: '#f8fafc', borderBottom: '2px solid #e1e7ef' }}>
+                        <tr style={{ color: '#64748b' }}>
+                           <th style={{ padding: '16px', fontSize: '11px', fontWeight: '800' }}>NOME</th>
+                           <th style={{ padding: '16px', fontSize: '11px', fontWeight: '800' }}>LINK / SLUG</th>
+                           <th style={{ padding: '16px', fontSize: '11px', fontWeight: '800' }}>PLATAFORMA</th>
+                           <th style={{ padding: '16px', fontSize: '11px', fontWeight: '800' }}>STATUS</th>
+                           <th style={{ padding: '16px', fontSize: '11px', fontWeight: '800', textAlign: 'right' }}>AÇÕES</th>
+                        </tr>
+                     </thead>
                     <tbody>
                        {campaigns.map(cp => (
                          <tr key={cp.id}>
@@ -895,6 +936,26 @@ function App() {
                  <option value="cliente">CLIENTE DIRETO</option>
               </select>
               <button onClick={() => setShowClientModal(false)} style={{ background: '#2563eb', color: 'white', padding: '12px', borderRadius: '10px', border: 'none', fontWeight: '800' }}>Finalizar Edição</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showCampaignModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200 }}>
+          <div className="card animate-in" style={{ width: '400px', padding: '32px' }}>
+            <h2 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '20px' }}>{editingCampaign ? 'Editar Campanha' : 'Nova Campanha'}</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              <input value={campaignFormData.name} onChange={e => setCampaignFormData({...campaignFormData, name: e.target.value})} placeholder="Nome da Campanha" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }} />
+              <input value={campaignFormData.link} onChange={e => setCampaignFormData({...campaignFormData, link: e.target.value})} placeholder="Slug / Link (ex: promo-01)" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }} />
+              <select value={campaignFormData.platform} onChange={e => setCampaignFormData({...campaignFormData, platform: e.target.value})} style={{ padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                 <option value="Instagram">Instagram Ads</option>
+                 <option value="Facebook">Facebook Ads</option>
+                 <option value="Google">Google / Orgânico</option>
+              </select>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                <button onClick={saveCampaign} style={{ flex: 1, padding: '12px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '800' }}>Salvar</button>
+                <button onClick={() => setShowCampaignModal(false)} style={{ flex: 1, padding: '12px', background: '#f1f5f9', border: 'none', borderRadius: '10px' }}>Cancelar</button>
+              </div>
             </div>
           </div>
         </div>
