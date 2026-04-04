@@ -25,6 +25,11 @@ const SOURCE_DATA = [
   { name: 'Indicação', value: 10, color: '#f59e0b' },
 ];
 
+const INITIAL_PRODUCTS = [
+  { id: '1', code: 'PRC-9090-PLD', name: "Porcelanato Polido 90x90 Gold", media: "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=800", type: 'image', desc: "Acabamento de alto brilho, ideal para áreas nobres." },
+  { id: '2', code: 'REV-SLM-WHT', name: "Revestimento Slim White 30x60", media: "https://images.unsplash.com/photo-1615529328331-f8917597711f?w=800", type: 'image', desc: "Paredes internas. Textura acetinada." },
+];
+
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [products, setProducts] = useState(INITIAL_PRODUCTS);
