@@ -73,7 +73,8 @@ function App() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [viewing, setViewing] = useState(null);
-  const [formData, setFormData] = useState({ name: '', code: '', media: '', type: 'image', desc: '', videoUrl: '', campaignId: '' });
+  const [formData, setFormData] = useState({ name: '', code: '', media: '', mediaGallery: [], type: 'image', desc: '', videoUrl: '', campaignId: '' });
+  const [carouselIndex, setCarouselIndex] = useState({});
   const [selectedChat, setSelectedChat] = useState(null);
   const [msgInput, setMsgInput] = useState('');
   const [messages, setMessages] = useState([
@@ -338,11 +339,22 @@ function App() {
               {products.map(p => {
                 const linkedCampaign = campaigns.find(cp => cp.id === p.campaignId);
                 const isActive = p.active !== false && (!linkedCampaign || linkedCampaign.status === 'Ativa' || linkedCampaign.status === 'active');
+                const gallery = p.mediaGallery && p.mediaGallery.length > 0 ? p.mediaGallery : (p.media ? [p.media] : []);
+                const idx = carouselIndex[p.id] || 0;
                 return (
                 <div key={p.id} className="card" style={{ padding: 0, overflow: 'hidden', opacity: isActive ? 1 : 0.5 }}>
                   <div style={{ height: '160px', background: '#000', position: 'relative' }}>
-                    <img src={p.media} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    {gallery.length > 0 && <img src={gallery[idx]} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                     {!isActive && <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '800', fontSize: '14px' }}>INATIVO</div>}
+                    {gallery.length > 1 && (
+                      <>
+                        <div onClick={() => setCarouselIndex({...carouselIndex, [p.id]: idx > 0 ? idx - 1 : gallery.length - 1})} style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', width: '28px', height: '28px', background: 'rgba(0,0,0,0.6)', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '14px', fontWeight: '700' }}>‹</div>
+                        <div onClick={() => setCarouselIndex({...carouselIndex, [p.id]: idx < gallery.length - 1 ? idx + 1 : 0})} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', width: '28px', height: '28px', background: 'rgba(0,0,0,0.6)', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '14px', fontWeight: '700' }}>›</div>
+                        <div style={{ position: 'absolute', bottom: '8px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '4px' }}>
+                          {gallery.map((_, i) => <div key={i} style={{ width: '6px', height: '6px', borderRadius: '50%', background: i === idx ? 'white' : 'rgba(255,255,255,0.4)' }} />)}
+                        </div>
+                      </>
+                    )}
                     <div style={{ position: 'absolute', top: '8px', right: '8px', display: 'flex', gap: '4px' }}>
                       <div onClick={() => removeProduct(p.id)} style={{ padding: '6px', background: '#ef4444', color: 'white', borderRadius: '6px', cursor: 'pointer' }}><Trash2 size={14} /></div>
                       <div onClick={() => startEdit(p)} style={{ padding: '6px', background: 'white', color: '#0f172a', borderRadius: '6px', cursor: 'pointer' }}><Edit3 size={14} /></div>
@@ -854,12 +866,41 @@ function App() {
 
       {showModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div className="card" style={{ width: '400px', padding: '24px' }}>
+          <div className="card" style={{ width: '450px', maxHeight: '90vh', overflowY: 'auto', padding: '24px' }}>
             <h2 style={{ marginBottom: '20px', fontSize: '18px', fontWeight: '800' }}>{editing ? 'Editar Produto' : 'Novo Produto'}</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Nome do Produto" style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
               <input value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})} placeholder="SKU" style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
-              <input value={formData.media} onChange={e => setFormData({...formData, media: e.target.value})} placeholder="URL da Imagem" style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
+
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '6px', display: 'block' }}>GALERIA DE FOTOS</label>
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+                  <input id="newImageUrl" placeholder="URL da imagem..." style={{ flex: 1, padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px' }} />
+                  <button onClick={() => {
+                    const input = document.getElementById('newImageUrl');
+                    const url = input.value.trim();
+                    if (url) {
+                      const gallery = formData.mediaGallery || [];
+                      if (gallery.length === 0 && formData.media) gallery.push(formData.media);
+                      setFormData({...formData, mediaGallery: [...gallery, url], media: gallery.length === 0 ? url : formData.media });
+                      input.value = '';
+                    }
+                  }} style={{ padding: '10px 14px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', fontSize: '16px' }}>+</button>
+                </div>
+                {(formData.mediaGallery && formData.mediaGallery.length > 0 ? formData.mediaGallery : (formData.media ? [formData.media] : [])).map((url, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px', background: '#f8fafc', borderRadius: '8px', marginBottom: '4px' }}>
+                    <img src={url} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '6px' }} />
+                    <span style={{ flex: 1, fontSize: '11px', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{url}</span>
+                    {i === 0 && <span style={{ fontSize: '9px', fontWeight: '800', color: '#2563eb', background: '#eff6ff', padding: '2px 6px', borderRadius: '4px' }}>CAPA</span>}
+                    <button onClick={() => {
+                      const gallery = formData.mediaGallery.length > 0 ? formData.mediaGallery : [formData.media];
+                      const updated = gallery.filter((_, idx) => idx !== i);
+                      setFormData({...formData, mediaGallery: updated, media: updated[0] || ''});
+                    }} style={{ padding: '4px', background: '#fef2f2', border: 'none', borderRadius: '4px', color: '#ef4444', cursor: 'pointer', fontSize: '12px' }}>✕</button>
+                  </div>
+                ))}
+              </div>
+
               <textarea value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} placeholder="Descrição" rows={3} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', resize: 'none' }} />
               <div>
                 <label style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px', display: 'block' }}>VINCULAR À CAMPANHA</label>
@@ -882,7 +923,26 @@ function App() {
       {viewing && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
           <div style={{ background: 'white', borderRadius: '15px', padding: '30px', maxWidth: '500px' }}>
-             <img src={viewing.media} style={{ width: '100%', borderRadius: '10px' }} />
+             <div style={{ position: 'relative', marginBottom: '15px' }}>
+               {(() => {
+                 const gallery = viewing.mediaGallery && viewing.mediaGallery.length > 0 ? viewing.mediaGallery : (viewing.media ? [viewing.media] : []);
+                 const vIdx = (viewing._carouselIdx || 0);
+                 return (
+                   <>
+                     <img src={gallery[vIdx] || ''} style={{ width: '100%', borderRadius: '10px', maxHeight: '300px', objectFit: 'cover' }} />
+                     {gallery.length > 1 && (
+                       <>
+                         <div onClick={() => setViewing({...viewing, _carouselIdx: vIdx > 0 ? vIdx - 1 : gallery.length - 1})} style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', width: '32px', height: '32px', background: 'rgba(0,0,0,0.6)', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '18px', fontWeight: '700' }}>‹</div>
+                         <div onClick={() => setViewing({...viewing, _carouselIdx: vIdx < gallery.length - 1 ? vIdx + 1 : 0})} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', width: '32px', height: '32px', background: 'rgba(0,0,0,0.6)', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '18px', fontWeight: '700' }}>›</div>
+                         <div style={{ position: 'absolute', bottom: '8px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '4px' }}>
+                           {gallery.map((_, i) => <div key={i} style={{ width: '6px', height: '6px', borderRadius: '50%', background: i === vIdx ? 'white' : 'rgba(255,255,255,0.4)' }} />)}
+                         </div>
+                       </>
+                     )}
+                   </>
+                 );
+               })()}
+             </div>
              <h2 style={{ marginTop: '15px' }}>{viewing.name}</h2>
              <p>{viewing.desc}</p>
              <button onClick={() => setViewing(null)} style={{ marginTop: '20px' }}>Fechar</button>
