@@ -1,24 +1,31 @@
-// Rota Serverless para Upload de Mídia no Vercel Blob
-// IMPORTANTE: Adicione a variável de ambiente BLOB_READ_WRITE_TOKEN na Vercel
-import { put } from '@vercel/blob';
+// Rota para Geração de Token de Upload do Vercel Blob (Direto via Cliente)
+// Isso contorna o limite de 4.5MB das funções serverless da Vercel
+import { handleUpload } from '@vercel/blob/client';
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).end();
-  
+  const body = req.body;
+
   try {
-    const filename = req.query.filename || 'item-' + Date.now();
-    const blob = await put(filename, req, {
-      access: 'public',
+    const jsonResponse = await handleUpload({
+      body: body,
+      request: req,
+      onBeforeGenerateToken: async (pathname) => {
+        // Aqui você pode adicionar lógica de autenticação se necessário
+        return {
+          allowedContentTypes: ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/quicktime'],
+          tokenPayload: JSON.stringify({
+            // Informações extras
+          }),
+        };
+      },
+      onUploadCompleted: async ({ blob, tokenPayload }) => {
+        // Lógica de pós-upload (ex: salvar no banco de dados)
+        console.log('Blob upload completed', blob, tokenPayload);
+      },
     });
 
-    return res.status(200).json(blob);
+    return res.status(200).json(jsonResponse);
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    return res.status(400).json({ error: error.message });
   }
 }
-
-export const config = {
-  api: {
-    bodyParser: false, // Necessário para processar o stream binário
-  },
-};

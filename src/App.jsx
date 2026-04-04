@@ -10,6 +10,7 @@ import {
 } from 'recharts';
 
 import axios from 'axios'; 
+import { upload } from '@vercel/blob/client';
 
 const DASHBOARD_CHART_DATA = [
   { name: 'Seg', leads: 24, conversion: 18 },
@@ -105,24 +106,21 @@ function App() {
 
     setIsUploading(true);
     try {
-      // ENVIAR PARA VERCEL BLOB VIA API NATIVA
-      const res = await fetch(`/api/upload?filename=${file.name}`, {
-          method: 'POST',
-          body: file,
+      // NOVO: Upload DIRETO via Cliente (Contorna limite de 4.5MB)
+      const blob = await upload(file.name, file, {
+          access: 'public',
+          handleUploadUrl: '/api/upload',
       });
 
-      if (!res.ok) throw new Error("Erro no upload do Vercel Blob");
-      
-      const blob = await res.json();
       setFormData({ 
           ...formData, 
           media: blob.url, 
           type: file.type.startsWith('video') ? 'video' : 'image' 
       });
-      console.log("🔥 Upload concluído:", blob.url);
+      console.log("🔥 Direct Upload concluído:", blob.url);
     } catch (err) {
       console.error("Erro no upload:", err);
-      // Fallback local caso token não configurado
+      // Fallback local caso token não configurado ou erro
       const reader = new FileReader();
       reader.onload = (ev) => {
           setFormData({ ...formData, media: ev.target.result, type: file.type.startsWith('video') ? 'video' : 'image' });
