@@ -106,11 +106,15 @@ function App() {
 
   const saveEmployee = async () => {
     if (editingEmployee) {
-       await axios.put(`${API_URL}/employees`, { ...employeeFormData, id: editingEmployee.id });
-       setEmployees(employees.map(e => e.id === editingEmployee.id ? { ...employeeFormData, id: e.id } : e));
+       const payload = { ...employeeFormData, id: editingEmployee.id };
+       if (!employeeFormData.pass || employeeFormData.pass === '********') {
+         delete payload.pass;
+       }
+       await axios.put(`${API_URL}/employees`, payload);
+       setEmployees(employees.map(e => e.id === editingEmployee.id ? { ...e, ...employeeFormData } : e));
     } else {
        const res = await axios.post(`${API_URL}/employees`, employeeFormData);
-       setEmployees([...employees, { ...employeeFormData, id: res.data.employee.id }]);
+       setEmployees([...employees, { ...employeeFormData, id: res.data.employee.id, pass: '********' }]);
     }
     setShowEmployeeModal(false);
     setEditingEmployee(null);
@@ -180,7 +184,7 @@ function App() {
     }
   };
 
-  const startEditEmployee = (e) => { setEditingEmployee(e); setEmployeeFormData(e); setShowEmployeeModal(true); };
+  const startEditEmployee = (e) => { setEditingEmployee(e); setEmployeeFormData({ ...e, pass: '********' }); setShowEmployeeModal(true); };
 
   const removeClient = async (id) => { 
     if(window.confirm("Excluir cliente permanentemente?")) {

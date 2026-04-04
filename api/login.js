@@ -4,31 +4,25 @@ import { kv } from '@vercel/kv';
 
 const SECRET_KEY = process.env.SESSION_SECRET || 'aura-premium-secret-2024-change-me';
 
-const DEFAULT_USERS = [
-  { id: '1', user: 'admin', pass: '$2a$10$X7o3o3o3o3o3o3o3o3o3o.X7o3o3o3o3o3o3o3o3o3o3o3o3o3o3o', name: 'Administrador', role: 'gestor', avatar: 'AD' },
-  { id: '2', user: 'toine', pass: '$2a$10$X7o3o3o3o3o3o3o3o3o3o.X7o3o3o3o3o3o3o3o3o3o3o3o3o3o3o', name: 'Taine Neto', role: 'gestor', avatar: 'TN' }
-];
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    let users = await kv.get('aura_users');
-    if (!users) {
+    let employees = await kv.get('aura_employees');
+    if (!employees || employees.length === 0) {
       const salt = await bcrypt.genSalt(10);
       const hash = await bcrypt.hash('1234', salt);
-      users = [
-        { id: '1', user: 'admin', pass: hash, name: 'Administrador', role: 'gestor', avatar: 'AD' },
-        { id: '2', user: 'toine', pass: hash, name: 'Taine Neto', role: 'gestor', avatar: 'TN' },
-        { id: '3', user: 'vendedor1', pass: hash, name: 'Consultor Vendas 01', role: 'vendedor', avatar: 'V1' }
+      employees = [
+        { id: '1', name: 'Administrador', user: 'admin', pass: hash, role: 'DIRETOR' },
+        { id: '2', name: 'Taine Neto', user: 'toine', pass: hash, role: 'DIRETORIA' }
       ];
-      await kv.set('aura_users', users);
+      await kv.set('aura_employees', employees);
     }
 
     const { user, pass } = req.body;
-    const found = users.find(u => u.user === user.toLowerCase());
+    const found = employees.find(e => e.user && e.user.toLowerCase() === user.toLowerCase());
 
     if (!found) {
       return res.status(401).json({ success: false, message: 'Credenciais inválidas' });
@@ -40,7 +34,7 @@ export default async function handler(req, res) {
     }
 
     const token = jwt.sign({ id: found.id, user: found.user, role: found.role }, SECRET_KEY, { expiresIn: '24h' });
-    return res.status(200).json({ success: true, token, user: { id: found.id, name: found.name, role: found.role, avatar: found.avatar } });
+    return res.status(200).json({ success: true, token, user: { id: found.id, name: found.name, role: found.role, avatar: found.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() } });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
