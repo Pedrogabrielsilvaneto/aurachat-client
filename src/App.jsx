@@ -42,9 +42,9 @@ const DEFAULT_CAMPAIGNS = [
 ];
 
 const DEFAULT_CONTACTS = [
-  { id: '1', name: 'Pedro Neto', phone: '5511988887777', status: 'new', msg: 'Gostaria de saber o preço.', time: '14:20', role: 'clt' },
-  { id: '2', name: 'Maria Silva', phone: '5511977776666', status: 'active', msg: 'Pode me enviar o catálogo?', time: '13:45', role: 'terceiros' },
-  { id: '3', name: 'Jorge Oliveira', phone: '5511966665555', status: 'completed', msg: 'Pedido confirmado!', time: 'Ontem', role: 'gestao' },
+  { id: '1', name: 'Pedro Neto', phone: '5511988887777', status: 'new', msg: 'Gostaria de saber o preço.', time: '14:20', role: 'campanha' },
+  { id: '2', name: 'Maria Silva', phone: '5511977776666', status: 'active', msg: 'Pode me enviar o catálogo?', time: '13:45', role: 'cliente' },
+  { id: '3', name: 'Jorge Oliveira', phone: '5511966665555', status: 'completed', msg: 'Pedido confirmado!', time: 'Ontem', role: 'cliente' },
 ];
 
 function SidebarLink({ icon, label, active, onClick, color }) {
@@ -817,9 +817,8 @@ function App() {
               <input defaultValue={editingClient.name} onBlur={e => setContacts(contacts.map(c => c.id === editingClient.id ? {...c, name: e.target.value} : c))} placeholder="Nome" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }} />
               <input defaultValue={editingClient.phone} onBlur={e => setContacts(contacts.map(c => c.id === editingClient.id ? {...c, phone: e.target.value} : c))} placeholder="WhatsApp" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }} />
               <select defaultValue={editingClient.role} onChange={e => setContacts(contacts.map(c => c.id === editingClient.id ? {...c, role: e.target.value} : c))} style={{ padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                 <option value="clt">CLT (Normal)</option>
-                 <option value="terceiros">TERCEIROS / PARCERIA</option>
-                 <option value="gestao">VIP / DIRETORIA</option>
+                 <option value="campanha">CAMPANHA (Ads FB/IG)</option>
+                 <option value="cliente">CLIENTE DIRETO</option>
               </select>
               <button onClick={() => setShowClientModal(false)} style={{ background: '#2563eb', color: 'white', padding: '12px', borderRadius: '10px', border: 'none', fontWeight: '800' }}>Finalizar Edição</button>
             </div>
