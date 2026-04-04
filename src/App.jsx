@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react';
 import { 
   ShoppingCart, Truck, MessageCircle, Search, Plus, Zap, LogOut, LayoutDashboard,
-  ChevronDown, MessageSquare as MessageSquareIcon, Edit3, Save, X, Trash2, Maximize2, Upload, CheckCircle
+  ChevronDown, MessageSquare as MessageSquareIcon, Edit3, Save, X, Trash2, Maximize2, Upload, CheckCircle,
+  Megaphone, ExternalLink, Activity
 } from 'lucide-react';
 import { 
   LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -30,9 +30,15 @@ const INITIAL_PRODUCTS = [
   { id: '2', code: 'REV-SLM-WHT', name: "Revestimento Slim White 30x60", media: "https://images.unsplash.com/photo-1615529328331-f8917597711f?w=800", type: 'image', desc: "Paredes internas. Textura acetinada." },
 ];
 
+const INITIAL_CAMPAIGNS = [
+  { id: '1', name: 'Promoção Verão - Pisos', platform: 'Instagram', link: 'ig/verao24', status: 'active', clicks: 1240, leads: 156, conversion: '12.5%' },
+  { id: '2', name: 'Black Friday Antecipada', platform: 'Facebook', link: 'fb/prime', status: 'inactive', clicks: 850, leads: 42, conversion: '4.9%' },
+];
+
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [products, setProducts] = useState(INITIAL_PRODUCTS);
+  const [campaigns, setCampaigns] = useState(INITIAL_CAMPAIGNS);
   const [contacts, setContacts] = useState([
     { id: '1', name: 'Pedro Neto', phone: '5511988887777', status: 'new', msg: 'Gostaria de saber o preço do porcelanato polido.', time: '14:20' },
     { id: '2', name: 'Maria Silva', phone: '5511977776666', status: 'active', msg: 'Pode me enviar o catálogo completo?', time: '13:45' },
@@ -97,6 +103,7 @@ function App() {
       <aside className="sidebar">
         <SidebarLink icon={<LayoutDashboard size={20}/>} label="Dashboard" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
         <SidebarLink icon={<ShoppingCart size={20}/>} label="Produtos" active={activeTab === 'products'} onClick={() => setActiveTab('products')} />
+        <SidebarLink icon={<Megaphone size={20}/>} label="Campanhas" active={activeTab === 'campaigns'} onClick={() => setActiveTab('campaigns')} />
         <SidebarLink icon={<Truck size={20}/>} label="Logística" active={activeTab === 'logistics'} onClick={() => setActiveTab('logistics')} />
         <SidebarLink icon={<MessageCircle size={20}/>} label="WhatsApp" active={activeTab === 'whatsapp'} onClick={() => setActiveTab('whatsapp')} />
         <div style={{ marginTop: 'auto' }}><SidebarLink icon={<LogOut size={20}/>} label="Sair" color="#ef4444" /></div>
@@ -293,6 +300,99 @@ function App() {
               </div>
               <h2 style={{ color: '#0f172a', fontWeight: '800', fontSize: '20px' }}>Pereira Acabamentos OmniChannel</h2>
               <p style={{ marginTop: '8px' }}>Selecione um cliente para assumir o atendimento humano.</p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'campaigns' && (
+          <div className="animate-in">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+               <h1 style={{ fontSize: '24px', fontWeight: '800' }}>Gestão de Campanhas</h1>
+               <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                 <Plus size={18} /> Nova Campanha
+               </button>
+            </div>
+
+            <div className="kpi-grid" style={{ marginBottom: '24px' }}>
+              <div className="card">
+                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>ROI ESTIMADO</span>
+                <h2 style={{ fontSize: '24px', fontWeight: '800', marginTop: '8px' }}>4.8x</h2>
+              </div>
+              <div className="card">
+                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>CLIQUES TOTAIS</span>
+                <h2 style={{ fontSize: '24px', fontWeight: '800', marginTop: '8px' }}>2.090</h2>
+              </div>
+              <div className="card">
+                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>LEADS GERADOS</span>
+                <h2 style={{ fontSize: '24px', fontWeight: '800', marginTop: '8px' }}>198</h2>
+              </div>
+              <div className="card">
+                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>CONVERSÃO GERAL</span>
+                <h2 style={{ fontSize: '24px', fontWeight: '800', marginTop: '8px' }}>9.47%</h2>
+              </div>
+            </div>
+
+            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                    <th style={{ padding: '16px', fontSize: '13px', fontWeight: '700', color: '#64748b' }}>Campanha</th>
+                    <th style={{ padding: '16px', fontSize: '13px', fontWeight: '700', color: '#64748b' }}>Plataforma</th>
+                    <th style={{ padding: '16px', fontSize: '13px', fontWeight: '700', color: '#64748b' }}>Link Rastreável</th>
+                    <th style={{ padding: '16px', fontSize: '13px', fontWeight: '700', color: '#64748b' }}>Status</th>
+                    <th style={{ padding: '16px', fontSize: '13px', fontWeight: '700', color: '#64748b' }}>Métricas</th>
+                    <th style={{ padding: '16px', fontSize: '13px', fontWeight: '700', color: '#64748b' }}>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {campaigns.map(cp => (
+                    <tr key={cp.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '16px' }}>
+                        <div style={{ fontWeight: '700', fontSize: '14px' }}>{cp.name}</div>
+                      </td>
+                      <td style={{ padding: '16px' }}>
+                        <span style={{ padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '700', background: cp.platform === 'Instagram' ? '#fdf2f8' : '#eff6ff', color: cp.platform === 'Instagram' ? '#db2777' : '#2563eb' }}>
+                          {cp.platform}
+                        </span>
+                      </td>
+                      <td style={{ padding: '16px' }}>
+                        <code style={{ background: '#f1f5f9', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', color: '#475569' }}>wa.me/p={cp.link}</code>
+                      </td>
+                      <td style={{ padding: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: cp.status === 'active' ? '#22c55e' : '#cbd5e1' }} />
+                          <span style={{ fontSize: '12px', fontWeight: '600', color: cp.status === 'active' ? '#16a34a' : '#64748b' }}>{cp.status === 'active' ? 'Ativa' : 'Pausada'}</span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '16px' }}>
+                        <div style={{ display: 'flex', gap: '15px' }}>
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '700' }}>CLIQUES</div>
+                            <div style={{ fontSize: '13px', fontWeight: '800' }}>{cp.clicks}</div>
+                          </div>
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '700' }}>CONV.</div>
+                            <div style={{ fontSize: '13px', fontWeight: '800', color: '#16a34a' }}>{cp.conversion}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: '16px' }}>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button style={{ padding: '6px', background: '#f1f5f9', border: 'none', borderRadius: '6px', cursor: 'pointer' }}><ExternalLink size={14} /></button>
+                          <button style={{ padding: '6px', background: '#f1f5f9', border: 'none', borderRadius: '6px', cursor: 'pointer' }}><Edit3 size={14} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="card" style={{ marginTop: '24px', background: '#f8fafc', border: '1px dashed #cbd5e1' }}>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#475569' }}>
+                  <Activity size={20} />
+                  <p style={{ fontSize: '14px', fontWeight: '600' }}>Sistema de Rastreamento Ativo: A Sônia identificará automaticamente leads vindos desses links.</p>
+               </div>
             </div>
           </div>
         )}
