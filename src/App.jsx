@@ -141,6 +141,21 @@ function App() {
 
   const moveContact = async (id, newStatus) => {
     try {
+      const contact = contacts.find(c => c.id === id);
+      if (newStatus === 'failed') {
+        const existingObs = contact?.obs || "";
+        if (!existingObs) {
+          const reason = prompt("⚠️ OBRIGATÓRIO: Descreva o problema ocorrido para prosseguir:");
+          if (!reason || reason.trim().length < 3) {
+            alert("Operação cancelada. É necessário registrar o motivo do problema.");
+            return;
+          }
+          await axios.put(`${API_URL}/contacts`, { id, updates: { obs: reason, status: newStatus } });
+          setContacts(contacts.map(c => c.id === id ? { ...c, status: newStatus, obs: reason } : c));
+          return;
+        }
+      }
+
       await axios.put(`${API_URL}/contacts`, { id, updates: { status: newStatus } });
       setContacts(contacts.map(c => c.id === id ? { ...c, status: newStatus } : c));
       if (selectedChat?.id === id) setSelectedChat({ ...selectedChat, status: newStatus });
