@@ -1,0 +1,119 @@
+{
+  "contacts": {},
+  "config": {
+    "botName": "Sonia",
+    "aiPrompt": "Você é a Sonia, assistente virtual ultra-rápida da Pereira Acabamentos. Seu objetivo é qualificar o lead e agendar visitas ou passar para um consultor humano.",
+    "geminiKey": "AIzaSyBrJoggMLjThJGyPWO8WZXdaGA4lwCnMa4"
+  },
+  "users": [
+    {
+      "id": "1",
+      "user": "admin",
+      "pass": "$2b$10$WqwhM2j/UPX11RV.3t9ps.A8mJXTNnOS7qaNAJI3g7BAnUMfn8rdW",
+      "name": "Administrador",
+      "role": "gestor",
+      "avatar": "AD"
+    },
+    {
+      "id": "2",
+      "user": "toine",
+      "pass": "$2b$10$WqwhM2j/UPX11RV.3t9ps.A8mJXTNnOS7qaNAJI3g7BAnUMfn8rdW",
+      "name": "Taine Neto",
+      "role": "gestor",
+      "avatar": "TN"
+    },
+    {
+      "id": "3",
+      "user": "vendedor1",
+      "pass": "$2b$10$WqwhM2j/UPX11RV.3t9ps.A8mJXTNnOS7qaNAJI3g7BAnUMfn8rdW",
+      "name": "Consultor Vendas 01",
+      "role": "vendedor",
+      "avatar": "V1"
+    }
+  ],
+  "team": [
+    {
+      "id": "1",
+      "name": "Taine Neto",
+      "role": "gestor",
+      "avatar": "TN",
+      "active": true
+    },
+    {
+      "id": "3",
+      "name": "Consultor 01",
+      "role": "vendedor",
+      "avatar": "V1",
+      "active": true
+    }
+  ],
+  "departments": [
+    {
+      "id": "1",
+      "name": "Vendas",
+      "color": "#2563eb"
+    }
+  ],
+  "campaigns": [
+    {
+      "id": "1",
+      "name": "Promoção Verão - Pisos",
+      "platform": "Instagram",
+      "link": "ig/verao24",
+      "status": "active",
+      "clicks": 1240,
+      "leads": 156,
+      "conversion": "12.5%"
+    },
+    {
+      "id": "2",
+      "name": "Black Friday Antecipada",
+      "platform": "Facebook",
+      "link": "fb/prime",
+      "status": "inactive",
+      "clicks": 850,
+      "leads": 42,
+      "conversion": "4.9%"
+    }
+  ],
+  "products": [
+    {
+      "id": "1",
+      "code": "PRC-9090-PLD",
+      "name": "Porcelanato Polido 90x90 Gold",
+      "media": "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=800",
+      "type": "image",
+      "desc": "Acabamento de alto brilho, ideal para áreas nobres.",
+      "categoriaId": "1",
+      "tamanho": "90x90",
+      "cor": "Gold",
+      "precoNormal": "129.90",
+      "precoPromocao": "99.90"
+    },
+    {
+      "id": "2",
+      "code": "REV-SLM-WHT",
+      "name": "Revestimento Slim White 30x60",
+      "media": "https://images.unsplash.com/photo-1615529328331-f8917597711f?w=800",
+      "type": "image",
+      "desc": "Paredes internas. Textura acetinada.",
+      "categoriaId": "1",
+      "tamanho": "30x60",
+      "cor": "White",
+      "precoNormal": "79.90",
+      "precoPromocao": ""
+    }
+  ],
+  "categories": [
+    {
+      "id": "1",
+      "name": "Porcelanato",
+      "color": "#2563eb"
+    },
+    {
+      "id": "2",
+      "name": "Pastilhas",
+      "color": "#d946ef"
+    }
+  ]
+}

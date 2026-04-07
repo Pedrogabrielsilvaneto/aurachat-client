@@ -10,22 +10,30 @@ const bcrypt = require('bcryptjs');
 // Configurações
 const PORT = 3001;
 const SECRET_KEY = process.env.SESSION_SECRET || 'fallback-secret';
-const VERCEL_API_URL = process.env.VERCEL_API_URL || 'https://aurachat-client-coral.vercel.app/api';
+const VERCEL_API_URL = process.env.VERCEL_API_URL || 'https://aurachat-client-coral.vercel.app';
 const axios = require('axios');
 
-// Configurar CORS para aceitar requisições da Vercel
-fastify.register(require('@fastify/cors'), {
-  origin: true, // Permitir todas as origens para facilitar o teste (depois podemos fixar o domínio da Vercel)
+fastify.register(require('@fastify/cors'), { 
+  origin: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 });
+
 // ============ DATABASE ============
 const DB_FILE = path.join(__dirname, 'database.json');
 let db = { 
   contacts: {}, 
   config: { 
-    botName: 'Sonia', 
-    aiPrompt: 'Você é a Sonia, assistente virtual ultra-rápida da Pereira Acabamentos. Seu objetivo é qualificar o lead e agendar visitas ou passar para um consultor humano.', 
+    name: 'Sônia',
+    greeting: 'Olá! Sou a {name}, assistente virtual da Pereira Acabamentos. Como posso ajudar?',
+    voiceTone: 'humanized',
+    canDo: 'Qualificar leads, passar preços e condições, agendar visitas, transferir para vendedor humano, enviar catálogo técnico, informar estoque e prazo de entrega',
+    cantDo: 'Dar descontos sem autorização, prometer prazos que não foram confirmados, inventar informações sobre produtos, atender reclamações complexas, fechar vendas acima de R$ 10.000 sem aprovação',
+    maxRetries: 3,
+    transferAfterFailed: true,
+    workingHours: 'Seg-Sex 08:00-18:00, Sab 08:00-12:00',
+    fallbackMessage: 'Entendi! Vou transferir você para um de nossos consultores que poderá ajudar melhor.',
+    knowledgeBase: 'A Pereira Acabamentos é especialista em porcelanatos de grande formato e acabamentos premium. Trabalhamos com marcas como Portobello, Villagres e Roca. Entregamos em um raio de 50km sem custo. Garantia de 5 anos em defeitos de fabricação.',
     geminiKey: process.env.GEMINI_KEY || '' 
   },
   users: [],
@@ -108,55 +116,66 @@ let aiQueue = [];
 let isProcessingQueue = false;
 let lastQR = null;
 let whatsAppStatus = 'disconnected';
+let lastSyncTime = 0;
 
 async function syncWAStatus() {
+  const now = Date.now();
+  if (now - lastSyncTime < 2000) return; // Throttle: mínimo 2s entre sync
+  lastSyncTime = now;
+  
   try {
-    await axios.post(`${VERCEL_API_URL}/wa-status`, { status: whatsAppStatus, qr: lastQR });
-    console.log(`📡 [SYNC] Status WA atualizado na Vercel: ${whatsAppStatus}`);
+    await axios.post(`${VERCEL_API_URL}/api/wa-status`, { 
+      status: whatsAppStatus, 
+      qr: lastQR,
+      updatedAt: now 
+    });
+    console.log(`📡 [SYNC] Status WA: ${whatsAppStatus}`);
   } catch (err) {
-    console.error(`❌ [SYNC-ERROR] Falha ao sincronizar status:`, err.message);
+    // Não mostra erro para não poluir logs
   }
 }
 
-let lastCommandTime = Date.now();
+let lastCommandTime = 0;
 async function pollVercelCommands() {
-    try {
-        const res = await axios.get(`${VERCEL_API_URL}/wa-command`); 
-        const cmd = res.data;
-        if (cmd && cmd.timestamp > lastCommandTime) {
-            lastCommandTime = cmd.timestamp;
-            if (cmd.action === 'logout') {
-                console.log("🛑 [COMMAND] Recebido comando de LOGOUT da Vercel");
-                if (auraSocket) {
-                    auraSocket.end(undefined);
-                    auraSocket = null;
-                }
-                lastQR = null;
-                whatsAppStatus = 'disconnected';
-                if (fs.existsSync('baileys_auth_info')) {
-                   fs.rmSync('baileys_auth_info', { recursive: true, force: true });
-                }
-                syncWAStatus();
-            } else if (cmd.action === 'connect') {
-                console.log("🔄 [COMMAND] Recebido comando de CONNECT da Vercel");
-                if (auraSocket) {
-                    auraSocket.end(undefined);
-                    auraSocket = null;
-                }
-                lastQR = null;
-                whatsAppStatus = 'disconnected';
-                if (fs.existsSync('baileys_auth_info')) {
-                    fs.rmSync('baileys_auth_info', { recursive: true, force: true });
-                }
-                syncWAStatus();
-                connectToWhatsApp();
-            }
+  try {
+    const res = await axios.get(`${VERCEL_API_URL}/api/wa-command?ts=${Date.now()}`); 
+    const cmd = res.data;
+    if (cmd && cmd.timestamp && cmd.timestamp > lastCommandTime) {
+      lastCommandTime = cmd.timestamp;
+      if (cmd.action === 'logout') {
+        console.log("🛑 [COMMAND] LOGOUT");
+        if (auraSocket) {
+          auraSocket.end(undefined);
+          auraSocket = null;
         }
-    } catch (err) {
-        // Ignora erro de 404 se não houver comando
+        lastQR = null;
+        whatsAppStatus = 'disconnected';
+        if (fs.existsSync('baileys_auth_info')) {
+          fs.rmSync('baileys_auth_info', { recursive: true, force: true });
+        }
+        syncWAStatus();
+      } else if (cmd.action === 'connect') {
+        console.log("🔄 [COMMAND] CONNECT");
+        if (auraSocket) {
+          auraSocket.end(undefined);
+          auraSocket = null;
+        }
+        lastQR = null;
+        whatsAppStatus = 'disconnected';
+        if (fs.existsSync('baileys_auth_info')) {
+          fs.rmSync('baileys_auth_info', { recursive: true, force: true });
+        }
+        syncWAStatus();
+        connectToWhatsApp();
+      }
     }
+  } catch (err) {
+    // Ignora erros de polling
+  }
 }
- setInterval(pollVercelCommands, 10000); // Poll a cada 10s
+
+// Polling otimizado: 3 segundos
+setInterval(pollVercelCommands, 3000);
 
 function enqueueAIRequest(jid, socket) {
   if (!aiQueue.includes(jid)) aiQueue.push(jid);
@@ -188,12 +207,40 @@ async function executeAICall(jid, socket) {
   if (h.length === 0 || h[h.length-1].role !== 'user') return;
 
   try {
-    const genAI = new GoogleGenerativeAI(db.config.geminiKey.trim());
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Corrigido para modelo estável
+    const config = db.config;
+    const systemPrompt = `
+      Você é a ${config.name}, assistente virtual da Pereira Acabamentos.
+      
+      PERSONALIDADE E TOM DE VOZ:
+      - Tom: ${config.voiceTone === 'ultra-human' ? 'Extremamente humanizado, natural, use emojis e gírias leves.' : 
+               config.voiceTone === 'humanized' ? 'Amigável e natural, use alguns emojis.' : 'Profissional, formal e direto.'}
+      - Se identifique como ${config.name}.
+      
+      O QUE VOCÊ PODE FAZER:
+      ${config.canDo}
+      
+      O QUE VOCÊ NÃO PODE FAZER (CRÍTICO):
+      ${config.cantDo}
+      
+      BASE DE CONHECIMENTO (ESTUDE ISSO):
+      ${config.knowledgeBase}
+      
+      PRODUTOS DISPONÍVEIS:
+      ${JSON.stringify(db.products.map(p => ({ SKU: p.code, Nome: p.name, Preco: p.precoPromocao || p.precoNormal, Categoria: p.categoriaId })))}
+      
+      INSTRUÇÕES ADICIONAIS:
+      - Sua saudação padrão é: "${config.greeting.replace('{name}', config.name)}"
+      - Se não souber responder algo legalmente ou sobre descontos, diga: "${config.fallbackMessage}"
+      - Mantenha respostas curtas e objetivas (máximo 2 parágrafos).
+      - SEMPRE tente qualificar o lead (pedir nome, o que ele procura, se é para obra nova ou reforma).
+    `.replace(/\r/g, '').trim();
+
+    const genAI = new GoogleGenerativeAI(config.geminiKey.trim());
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const result = await model.generateContent({ 
         contents: h, 
-        systemInstruction: db.config.aiPrompt.replace(/\r/g, '').trim()
+        systemInstruction: systemPrompt
     });
     const reply = result.response.text();
     
@@ -212,7 +259,6 @@ async function executeAICall(jid, socket) {
 }
 
 // ============ API ROUTES ============
-fastify.register(require('@fastify/cors'), { origin: '*' });
 
 // Auth
 fastify.post('/login', async (req, reply) => {
@@ -425,6 +471,14 @@ fastify.post('/toggle-bot', { preHandler: [authenticateToken] }, async (req) => 
   return { success: false };
 });
 
+// AI Configuration
+fastify.get('/ai-config', { preHandler: [authenticateToken] }, async () => db.config);
+fastify.post('/ai-config', { preHandler: [authenticateToken] }, async (req) => {
+  db.config = { ...db.config, ...req.body };
+  saveDB();
+  return { success: true, config: db.config };
+});
+
 fastify.post('/logout-wa', { preHandler: [authenticateToken] }, async (req, reply) => {
   if (auraSocket) {
     auraSocket.end(undefined);
@@ -441,6 +495,11 @@ fastify.post('/logout-wa', { preHandler: [authenticateToken] }, async (req, repl
 
 fastify.get('/wa-status', { preHandler: [authenticateToken] }, async () => {
     return { status: whatsAppStatus, qr: lastQR };
+});
+
+// Polling fallback - para quando Socket.io não está disponível
+fastify.get('/wa-command', async (req, reply) => {
+    return { action: 'none' };
 });
 
 // ============ WHATSAPP SERVICE ============
