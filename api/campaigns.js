@@ -28,7 +28,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'PUT') {
        const u = req.body;
-       const updated = currentCampaigns.map(cp => cp.id === u.id ? { ...u } : cp);
+       const updated = currentCampaigns.map(cp => cp.id === u.id ? { ...cp, ...u } : cp);
        await kv.set('aura_campaigns', updated);
        return res.status(200).json({ success: true });
     }
