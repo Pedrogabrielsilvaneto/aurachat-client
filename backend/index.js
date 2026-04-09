@@ -56,13 +56,8 @@ let db = {
   ]
 };
 
-// Aguarda o servidor estar pronto para o Socket.io
+// Socket.io initialization will happen inside fastify.listen
 let io;
-fastify.ready(err => {
-  if (err) throw err;
-  io = require('socket.io')(fastify.server, { cors: { origin: '*' } });
-  console.log('✅ Socket.io acoplado ao servidor');
-});
 
 async function initDB() {
   const salt = await bcrypt.genSalt(10);
@@ -76,6 +71,8 @@ async function initDB() {
   return db;
 }
 
+const saveDB = () => { fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), 'utf8'); };
+
 (async () => {
   if (fs.existsSync(DB_FILE)) { 
     try { 
@@ -86,6 +83,10 @@ async function initDB() {
       } else {
         db = { ...db, ...savedData }; 
       }
+      // Prioridade absoluta para a chave do .env se ela existir
+      if (process.env.GEMINI_KEY) {
+        db.config.geminiKey = process.env.GEMINI_KEY;
+      }
     } catch (err) { 
       console.error("Erro ao ler DB:", err); 
       db = await initDB();
@@ -95,8 +96,6 @@ async function initDB() {
   }
   saveDB();
 })();
-
-const saveDB = () => { fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), 'utf8'); };
 
 // ============ AUTH MIDDLEWARE ============
 async function authenticateToken(req, reply) {
@@ -259,6 +258,7 @@ async function executeAICall(jid, socket) {
 }
 
 // ============ API ROUTES ============
+fastify.get('/', async () => ({ status: 'online', service: 'AuraChat Backend', version: '1.2.0' }));
 
 // Auth
 fastify.post('/login', async (req, reply) => {
@@ -279,6 +279,38 @@ fastify.get('/messages', { preHandler: [authenticateToken] }, async () => {
 });
 
 fastify.get('/team', { preHandler: [authenticateToken] }, async () => db.team);
+fastify.get('/employees', { preHandler: [authenticateToken] }, async () => db.users.map(u => ({ ...u, pass: '********' })));
+fastify.post('/employees', { preHandler: [authenticateToken] }, async (req) => {
+  const salt = await bcrypt.genSalt(10);
+  const hash = await bcrypt.hash(req.body.pass, salt);
+  const employee = { ...req.body, pass: hash, id: Date.now().toString() };
+  db.users.push(employee);
+  saveDB();
+  return { success: true, employee };
+});
+fastify.put('/employees/:id', { preHandler: [authenticateToken] }, async (req) => {
+  const { id } = req.params;
+  const idx = db.users.findIndex(u => u.id === id);
+  if (idx >= 0) {
+    const updates = { ...req.body };
+    if (updates.pass && updates.pass !== '********') {
+      const salt = await bcrypt.genSalt(10);
+      updates.pass = await bcrypt.hash(updates.pass, salt);
+    } else {
+      delete updates.pass;
+    }
+    db.users[idx] = { ...db.users[idx], ...updates };
+    saveDB();
+    return { success: true };
+  }
+  return { success: false };
+});
+fastify.delete('/employees', { preHandler: [authenticateToken] }, async (req) => {
+  const { id } = req.query;
+  db.users = db.users.filter(u => u.id !== id);
+  saveDB();
+  return { success: true };
+});
 
 fastify.get('/stats', { preHandler: [authenticateToken] }, async () => {
   const all = Object.values(db.contacts);
@@ -374,6 +406,29 @@ fastify.put('/contacts/:jid', { preHandler: [authenticateToken] }, async (req) =
   const updates = req.body;
   if (db.contacts[jid]) {
     db.contacts[jid] = { ...db.contacts[jid], ...updates };
+    saveDB();
+    io.emit('crm_update', Object.values(db.contacts));
+    return { success: true };
+  }
+  return { success: false };
+});
+
+// Suporte para o formato usado no App.jsx (PUT /contacts com ID no body)
+fastify.put('/contacts', { preHandler: [authenticateToken] }, async (req) => {
+  const { id, updates } = req.body;
+  if (db.contacts[id]) {
+    db.contacts[id] = { ...db.contacts[id], ...updates };
+    saveDB();
+    io.emit('crm_update', Object.values(db.contacts));
+    return { success: true };
+  }
+  return { success: false };
+});
+
+fastify.delete('/contacts', { preHandler: [authenticateToken] }, async (req) => {
+  const { id } = req.query;
+  if (db.contacts[id]) {
+    delete db.contacts[id];
     saveDB();
     io.emit('crm_update', Object.values(db.contacts));
     return { success: true };
@@ -493,7 +548,7 @@ fastify.post('/logout-wa', { preHandler: [authenticateToken] }, async (req, repl
   return { success: false, message: 'Nenhuma conexão ativa' };
 });
 
-fastify.get('/wa-status', { preHandler: [authenticateToken] }, async () => {
+fastify.get('/wa-status', async () => {
     return { status: whatsAppStatus, qr: lastQR };
 });
 
@@ -501,6 +556,32 @@ fastify.get('/wa-status', { preHandler: [authenticateToken] }, async () => {
 fastify.get('/wa-command', async (req, reply) => {
     return { action: 'none' };
 });
+
+// Aceita comandos diretos do frontend (connect / logout)
+fastify.post('/wa-command', async (req, reply) => {
+  const { action } = req.body || {};
+  if (action === 'connect') {
+    if (auraSocket) { auraSocket.end(undefined); auraSocket = null; }
+    lastQR = null;
+    whatsAppStatus = 'disconnected';
+    if (fs.existsSync('baileys_auth_info')) {
+      fs.rmSync('baileys_auth_info', { recursive: true, force: true });
+    }
+    connectToWhatsApp();
+    return { success: true, message: 'Iniciando conexão WhatsApp...' };
+  } else if (action === 'logout') {
+    if (auraSocket) { auraSocket.end(undefined); auraSocket = null; }
+    lastQR = null;
+    whatsAppStatus = 'disconnected';
+    if (fs.existsSync('baileys_auth_info')) {
+      fs.rmSync('baileys_auth_info', { recursive: true, force: true });
+    }
+    syncWAStatus();
+    return { success: true, message: 'WhatsApp desconectado.' };
+  }
+  return { success: false, message: 'Ação desconhecida' };
+});
+
 
 // ============ WHATSAPP SERVICE ============
 let auraSocket = null;
@@ -649,6 +730,15 @@ fastify.listen({ port: PORT, host: '0.0.0.0' }, (err, address) => {
         console.error('❌ Erro ao iniciar servidor:', err); 
         process.exit(1); 
     }
+    
+    // Initialize Socket.io after server is listening
+    io = require('socket.io')(fastify.server, { 
+      cors: { 
+        origin: '*',
+        methods: ['GET', 'POST']
+      } 
+    });
+    
     console.log(`🚀 [BACKEND] Aura CRM Ativo: ${address} (PORTA ${PORT})`);
     connectToWhatsApp();
 });

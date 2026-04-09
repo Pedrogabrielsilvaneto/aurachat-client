@@ -1,0 +1,30 @@
+name: Deploy AuraChat Backend to GCP
+
+on:
+  push:
+    branches:
+      - master
+      - main
+    paths:
+      - 'backend/**'
+      - 'database.json'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to GCP VM via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: 136.118.48.181
+          username: pedrogabrielsilvaneto
+          key: ${{ secrets.GCP_SSH_KEY }}
+          script: |
+            cd ~/aura-system/backend
+            git pull origin master
+            npm install
+            pm2 restart aura-backend
+            echo "✅ Backend atualizado e reiniciado com sucesso!"
