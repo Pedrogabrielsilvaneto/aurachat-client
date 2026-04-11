@@ -13,6 +13,35 @@ import {
 import axios from 'axios'; 
 import { upload } from '@vercel/blob/client';
 
+// Configuração Global de Segurança (Fix 401)
+axios.interceptors.request.use(config => {
+  const token = localStorage.getItem('aura_token');
+  if (token) {
+    if (!config.headers) config.headers = {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}, error => {
+  return Promise.reject(error);
+});
+
+// Interceptor de Resposta para deslogar em caso de 401
+axios.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response && error.response.status === 401) {
+      console.warn("Sessão expirada ou não autorizada. Deslogando...");
+      localStorage.removeItem('aura_token');
+      localStorage.removeItem('aura_user');
+      if (window.location.pathname !== '/') {
+        window.location.reload();
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+
 const DASHBOARD_CHART_DATA = [
   { name: 'Seg', leads: 24, conversion: 18 },
   { name: 'Ter', leads: 31, conversion: 22 },
@@ -35,7 +64,7 @@ const DEFAULT_CATEGORIES = [
   { id: '2', name: 'Pastilhas', color: '#d946ef' }
 ];
 
-const API_URL = '/api'; 
+const API_URL = '/api-proxy'; 
 
 const DEFAULT_PRODUCTS = [
   { id: '1', code: 'PRC-9090-PLD', name: "Porcelanato Polido 90x90 Gold", media: "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=800", type: 'image', desc: "Acabamento de alto brilho, ideal para áreas nobres.", categoriaId: '1', tamanho: '90x90', cor: 'Gold', precoNormal: '129.90', precoPromocao: '99.90' },
@@ -142,23 +171,17 @@ function App() {
   const [aiConfigStep, setAiConfigStep] = useState(0);
   const [aiTab, setAiTab] = useState('config'); // config | whatsapp
   const [waStatus, setWaStatus] = useState({ status: 'disconnected', qr: null });
-  const [aiConfig, setAiConfig] = useState(() => {
-    try {
-      const saved = localStorage.getItem('ai_config');
-      if (saved) return JSON.parse(saved);
-    } catch {}
-    return {
-      name: 'Sônia',
-      greeting: 'Olá! Sou a {name}, assistente virtual da Pereira Acabamentos. Como posso ajudar?',
-      voiceTone: 'humanized',
-      canDo: 'Qualificar leads, passar preços e condições, agendar visitas, transferir para vendedor humano, enviar catálogo técnico, informar estoque e prazo de entrega',
-      cantDo: 'Dar descontos sem autorização, prometer prazos que não foram confirmados, inventar informações sobre produtos, atender reclamações complexas, fechar vendas acima de R$ 10.000 sem aprovação',
-      maxRetries: 3,
-      transferAfterFailed: true,
-      workingHours: 'Seg-Sex 08:00-18:00, Sab 08:00-12:00',
-      fallbackMessage: 'Entendi! Vou transferir você para um de nossos consultores que poderá ajudar melhor.',
-      knowledgeBase: 'A Pereira Acabamentos é especialista em porcelanatos de grande formato e acabamentos premium. Trabalhamos com marcas como Portobello, Villagres e Roca. Entregamos em um raio de 50km sem custo. Garantia de 5 anos em defeitos de fabricação.'
-    };
+  const [aiConfig, setAiConfig] = useState({
+    name: 'Sônia',
+    greeting: 'Olá! Sou a {name}, assistente virtual da Pereira Acabamentos. Como posso ajudar?',
+    voiceTone: 'humanized',
+    canDo: 'Qualificar leads, passar preços e condições, agendar visitas, transferir para vendedor humano, enviar catálogo técnico, informar estoque e prazo de entrega',
+    cantDo: 'Dar descontos sem autorização, prometer prazos que não foram confirmados, inventar informações sobre produtos, atender reclamações complexas, fechar vendas acima de R$ 10.000 sem aprovação',
+    maxRetries: 3,
+    transferAfterFailed: true,
+    workingHours: 'Seg-Sex 08:00-18:00, Sab 08:00-12:00',
+    fallbackMessage: 'Entendi! Vou transferir você para um de nossos consultores que poderá ajudar melhor.',
+    knowledgeBase: 'A Pereira Acabamentos é especialista em porcelanatos de grande formato e acabamentos premium. Trabalhamos com marcas como Portobello, Villagres e Roca. Entregamos em um raio de 50km sem custo. Garantia de 5 anos em defeitos de fabricação.'
   });
 
   const [gestionSubTab, setGestionSubTab] = useState('users');
@@ -237,11 +260,16 @@ function App() {
       if (res.data.success) {
         localStorage.setItem('aura_token', res.data.token);
         localStorage.setItem('aura_user', JSON.stringify(res.data.user));
+        
+        // Atualiza o header do axios IMEDIATAMENTE após o login para evitar 401 na primeira carga
+        axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
+        
         setLoggedUser(res.data.user);
         setIsAuthenticated(true);
+        window.location.reload(); // Recarrega para garantir que todos os useEffects rodem com o novo token
       }
     } catch (err) {
-      alert('Credenciais inválidas');
+      alert('Credenciais inválidas ou erro no servidor');
     }
   };
 
@@ -258,10 +286,12 @@ function App() {
     let interval;
     if (activeTab === 'ai-config' && aiTab === 'whatsapp') {
       const fetchStatus = () => {
-        axios.get(`${API_URL}/wa-status`).then(res => setWaStatus(res.data)).catch(() => {});
+        axios.get(`${API_URL}/wa-status?t=${Date.now()}`).then(res => {
+          setWaStatus(res.data);
+        }).catch(() => {});
       };
       fetchStatus();
-      interval = setInterval(fetchStatus, 5000);
+      interval = setInterval(fetchStatus, 3000);
     }
     return () => clearInterval(interval);
   }, [activeTab, aiTab]);
@@ -291,25 +321,39 @@ function App() {
 
   React.useEffect(() => {
     const fetchData = async () => {
+      const token = localStorage.getItem('aura_token');
+      if (!token) return;
+
       try {
-        const [cRes, pRes, eRes, cpRes, catRes] = await Promise.all([
+        const [cRes, pRes, eRes, cpRes, catRes, aiRes] = await Promise.all([
           axios.get(`${API_URL}/contacts`),
           axios.get(`${API_URL}/products`),
           axios.get(`${API_URL}/employees`),
           axios.get(`${API_URL}/campaigns`),
-          axios.get(`${API_URL}/categories`)
+          axios.get(`${API_URL}/categories`),
+          axios.get(`${API_URL}/ai-config`)
         ]);
-        if (cRes.data.length > 0) setContacts(cRes.data);
+        if (cRes.data.length > 0) {
+          const mapped = cRes.data.map(c => ({
+            ...c,
+            isAiPaused: c.bot_active === false
+          }));
+          setContacts(mapped);
+        }
         if (pRes.data.length > 0) setProducts(pRes.data);
         if (eRes.data.length > 0) setEmployees(eRes.data);
         if (cpRes.data.length > 0) setCampaigns(cpRes.data);
         if (catRes.data && catRes.data.length > 0) setCategories(catRes.data);
+        if (aiRes.data && aiRes.data.name) setAiConfig(aiRes.data);
       } catch (err) {
-        console.warn("KV Sync Error:", err.message);
+        if (err.response && err.response.status !== 401) {
+           console.warn("KV Sync Error:", err.message);
+        }
       }
     };
     fetchData();
-  }, []);
+  }, [isAuthenticated]);
+
 
   const handleUpload = async (e) => {
     const file = e.target.files[0];
@@ -855,7 +899,7 @@ function App() {
                     borderBottom: aiTab === 'whatsapp' ? '3px solid #2563eb' : '3px solid transparent',
                     color: aiTab === 'whatsapp' ? '#2563eb' : '#64748b',
                     fontSize: '13px', fontWeight: '800', cursor: 'pointer', transition: 'all 0.2s'
-                  }}>📱 CONECTAR WHATSAPP (ORACLE)</button>
+                  }}>📱 CONECTAR WHATSAPP (GCP)</button>
               </div>
               
               {aiTab === 'config' ? (
@@ -1004,9 +1048,13 @@ function App() {
                         Próximo →
                       </button>
                     ) : (
-                      <button className="ai-nav-btn primary" onClick={() => {
-                        localStorage.setItem('ai_config', JSON.stringify(aiConfig));
-                        alert('Configurações da Sônia salvas com sucesso!');
+                      <button className="ai-nav-btn primary" onClick={async () => {
+                        try {
+                          await axios.post(`${API_URL}/ai-config`, aiConfig);
+                          alert('Configurações da Sônia salvas com sucesso (Nuvem)!');
+                        } catch (err) {
+                          alert('Erro ao salvar no servidor. Verifique sua conexão.');
+                        }
                       }}>
                         Salvar e Ativar ⚡
                       </button>
@@ -1023,7 +1071,7 @@ function App() {
                         <CheckCircle size={40} />
                       </div>
                       <h2 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '8px' }}>WhatsApp Conectado!</h2>
-                      <p style={{ color: '#64748b', marginBottom: '32px' }}>O sistema está rodando na Oracle Cloud e a Sônia está online.</p>
+                      <p style={{ color: '#64748b', marginBottom: '32px' }}>O sistema está rodando no Google Cloud e a Sônia está online.</p>
                       <button className="wa-disconnect-btn" onClick={async () => {
                          if(confirm("Deseja realmente desconectar o WhatsApp?")) {
                             await axios.post(`${API_URL}/logout-wa`);
@@ -1050,7 +1098,7 @@ function App() {
                         <Zap size={40} />
                       </div>
                       <h2 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '8px' }}>Servidor Offline ou Desconectado</h2>
-                      <p style={{ color: '#64748b', marginBottom: '24px' }}>Iniciando serviço de conexão com a Oracle Cloud...</p>
+                      <p style={{ color: '#64748b', marginBottom: '24px' }}>Iniciando serviço de conexão com o Google Cloud...</p>
                       <button className="ai-nav-btn primary" onClick={async () => {
                          try {
                            await axios.post(`${API_URL}/wa-command`, { action: 'connect' });
@@ -1648,10 +1696,16 @@ function App() {
                           Protocolo: {selectedChat.protocolo}
                           <div style={{ width: '1px', height: '12px', background: '#cbd5e1' }} />
                           <button 
-                            onClick={() => {
+                            onClick={async () => {
                               const isPaused = !selectedChat.isAiPaused;
-                              setContacts(contacts.map(c => c.id === selectedChat.id ? { ...c, isAiPaused: isPaused } : c));
-                              setSelectedChat({ ...selectedChat, isAiPaused: isPaused });
+                              try {
+                                await axios.post(`${API_URL}/toggle-bot`, { jid: selectedChat.id, status: !isPaused });
+                                // O status no backend é 'bot_active', então 'status: true' significa 'isAiPaused: false'
+                                setContacts(contacts.map(c => c.id === selectedChat.id ? { ...c, isAiPaused: isPaused } : c));
+                                setSelectedChat({ ...selectedChat, isAiPaused: isPaused });
+                              } catch (err) {
+                                alert("Erro ao alternar status da IA");
+                              }
                             }}
                             className={`ai-toggle-badge ${selectedChat.isAiPaused ? 'paused' : 'active'}`}
                             title={selectedChat.isAiPaused ? "IA Pausada para este contato" : "IA Ativa para este contato"}
