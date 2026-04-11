@@ -347,12 +347,13 @@ function App() {
         if (aiRes.data && aiRes.data.name) setAiConfig(aiRes.data);
       } catch (err) {
         if (err.response && err.response.status !== 401) {
-           console.warn("KV Sync Error:", err.message);
+           console.warn("🔄 AuraCloud Sync:", err.message);
         }
       }
     };
     fetchData();
   }, [isAuthenticated]);
+
 
 
   const handleUpload = async (e) => {
