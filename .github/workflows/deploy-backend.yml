@@ -1,13 +1,10 @@
-name: Deploy AuraChat Backend to GCP
+name: Deploy Pereira Acabamentos to GCP
 
 on:
   push:
     branches:
       - master
       - main
-    paths:
-      - 'backend/**'
-      - 'database.json'
 
 jobs:
   deploy:
@@ -19,13 +16,23 @@ jobs:
       - name: Deploy to GCP VM via SSH
         uses: appleboy/ssh-action@master
         with:
-          host: 136.118.48.181
+          host: 34.19.0.191
           username: pedrogabrielsilvaneto
           key: ${{ secrets.GCP_SSH_KEY }}
           script: |
+            export TZ="America/Sao_Paulo"
             cd ~/aura-system
             git pull origin master
-            cd backend
+            
+            # Build Frontend
+            cd frontend
             npm install
-            pm2 restart aura-backend
-            echo "✅ Backend atualizado e reiniciado com sucesso!"
+            npm run build
+            
+            # Setup Backend
+            cd ../backend
+            npm install --production
+            
+            # Restart Service
+            pm2 restart aura-backend --update-env
+            echo "✅ Sistema Pereira Acabamentos atualizado e reiniciado com sucesso!"
