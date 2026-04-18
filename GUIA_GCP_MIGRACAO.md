@@ -16,14 +16,14 @@ Siga os passos e tudo funcionará automaticamente.
    - **Série da Máquina:** Clique na Aba `E2`.
    - **Tipo de Máquina:** Selecione `e2-micro (2 vCPU, 1 GB de memória)`.
    - **SO / Disco de Inicialização:** Ubuntu 22.04 LTS.
-   - **IP Externo:** `136.118.48.181` (Já detectado)
+   - **IP Externo:** `34.19.0.191` (Já detectado)
    - **Série da Máquina:** Mude para e clique na Aba `E2`.
    - **Tipo de Máquina:** Selecione `e2-micro (2 vCPU, 1 GB de memória)`.
    - **SO / Disco de Inicialização:** Clique em Alterar > Selecione **Ubuntu**, versão `20.04 LTS` ou `22.04 LTS`.
 5. Selecione **Permitir tráfego HTTP** e **Permitir tráfego HTTPS**.
 6. Clique em **Criar**. 
 
-O Google já criou sua máquina. Ela está com o IP: `136.118.48.181`.
+O Google já criou sua máquina. Ela está com o IP: `34.19.0.191`.
 Ao lado da máquina, clique no botão **SSH** para abrir o terminal.
 
 ---
@@ -87,4 +87,42 @@ Agora vamos usar o formato mais robusto para Linux:
 3. Mire a tela do WhatsApp do celular que usará a Sônia.
 4. Pronto! O Whatsapp logou e a Sônia ligou.
 
-*(PS: Lembre-se de atualizar o IP no Vercel se o Google te der um novo. O IP atual configurado é: `136.118.48.181`).*
+*(PS: Lembre-se de atualizar o IP no Vercel se o Google te der um novo. O IP atual configurado é: `34.19.0.191`).*
+
+---
+
+### Passo 5: Deployment Automático (GitHub Actions) 🤖
+*Parabéns! Agora que o servidor está voando, vamos fazer ele se atualizar sozinho sempre que você mudar o código.*
+
+1. **Configurar o Segredo no GitHub** (O que você está fazendo agora):
+   - No seu repositório do GitHub, vá em **Settings > Secrets and variables > Actions**.
+   - Clique em **New repository secret**.
+   - Nome: `GCP_SSH_KEY`.
+   - Valor: Cole a sua **Chave Privada SSH** (aquela que começa com `-----BEGIN OPENSSH PRIVATE KEY-----`).
+
+2. **Garantir que o Servidor Aceita a Chave**:
+   - No terminal SSH do Google, rode este comando para garantir que a chave pública está autorizada (substitua pelo seu conteúdo se necessário):
+     ```bash
+     mkdir -p ~/.ssh && chmod 700 ~/.ssh
+     # Certifique-se que sua chave pública está em ~/.ssh/authorized_keys
+     ```
+
+3. **Preparar o Repositório no Google Cloud**:
+   - Para o GitHub conseguir dar "push", precisamos que a pasta seja um repositório Git:
+     ```bash
+     cd ~/aura-system
+     git init
+     git remote add origin https://github.com/Pedrogabrielsilvaneto/aurachat-client.git
+     git fetch
+     git checkout master
+     ```
+
+4. **Como Funciona agora?**
+   - Sempre que você fizer um `git push` para o GitHub na branch `master`, o GitHub Actions vai:
+     1. Entrar via SSH no Google Cloud.
+     2. Puxar o código novo.
+     3. Instalar dependências (`npm install`).
+     4. Reiniciar a Sônia (`pm2 restart aura-backend`).
+
+---
+🌟 **Status Final:** Seu ecossistema está agora no Google Cloud, com porta blindada, IP fixo (enquanto a VM estiver ligada) e deploy automático. Sucesso total!

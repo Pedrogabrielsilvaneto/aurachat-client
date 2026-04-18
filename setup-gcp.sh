@@ -30,9 +30,11 @@ if ! command -v pm2 >/dev/null 2>&1; then
     sudo npm install -g pm2
 fi
 
-# 5. Criar diretório do app
-echo "📁 Preparando diretório /home/aura/backend ..."
+# 5. Criar diretório do app e dependências
+echo "📁 Preparando diretório ~/aura-system ..."
 mkdir -p ~/aura-system/backend
+mkdir -p ~/aura-system/frontend
+
 cd ~/aura-system
 
 echo "=========================================================================="

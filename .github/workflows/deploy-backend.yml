@@ -23,8 +23,9 @@ jobs:
           username: pedrogabrielsilvaneto
           key: ${{ secrets.GCP_SSH_KEY }}
           script: |
-            cd ~/aura-system/backend
+            cd ~/aura-system
             git pull origin master
+            cd backend
             npm install
             pm2 restart aura-backend
             echo "✅ Backend atualizado e reiniciado com sucesso!"
