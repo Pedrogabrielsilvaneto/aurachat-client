@@ -1,2 +1,14 @@
-# Vercel - OBSOLETO (migrado para GCP)
-# .vercel
+# Vercel - OBSOLETO
+.vercel
+
+# Node
+node_modules/
+dist/
+.env
+
+# Mobile/Auth
+baileys_auth_info/
+
+# Build artifacts
+frontend/dist/
+backend/public/
